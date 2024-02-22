@@ -1,5 +1,5 @@
 from django.urls import include, path
-from rest_framework.routers import SimpleRouter
+from rest_framework.routers import SimpleRouter, DefaultRouter
 from .views import *
 
 from .views import *
@@ -21,7 +21,11 @@ router_v1.register(
     basename='title'
 )
 
+router = DefaultRouter()
+router.register(r"v1/categories", CategoryViewSet, basename="categories")
+router.register(r"v1/genres", GenreViewSet, basename="genres")
 
 urlpatterns = [
+    path('', include(router.urls)),
     path('v1/', include(router_v1.urls)),
 ]
