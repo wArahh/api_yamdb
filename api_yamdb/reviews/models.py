@@ -30,7 +30,7 @@ class Comments(models.Model):
 
 class Category(models.Model):
     name = models.CharField(verbose_name="Наименование категории", max_length=256)
-    slug = models.SlugField(verbose_name= "Идентификатор категории", max_length=50, unique=True)
+    slug = models.SlugField(verbose_name="Идентификатор категории", max_length=50, unique=True)
 
     class Meta:
         verbose_name = "категория"

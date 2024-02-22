@@ -23,12 +23,6 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ('text',)
 
 
-class TitleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Title
-        fields = '__all__'
-
-
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         fields = ("name", "slug")
