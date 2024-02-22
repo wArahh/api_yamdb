@@ -29,31 +29,46 @@ class Comments(models.Model):
 
 
 class Category(models.Model):
-    name = models.CharField(max_length=256)
-    slug = models.SlugField(max_length=50, unique=True)
+    name = models.CharField(verbose_name="Наименование категории", max_length=256)
+    slug = models.SlugField(verbose_name= "Идентификатор категории", max_length=50, unique=True)
+
+    class Meta:
+        verbose_name = "категория"
+        verbose_name_plural = "Категории"
+        ordering = ("name",)
 
     def __str__(self):
         return self.name
 
 
 class Genre(models.Model):
-    name = models.CharField(max_length=256)
-    slug = models.SlugField(max_length=50, unique=True)
+    name = models.CharField(verbose_name="Наименование жанра", max_length=256)
+    slug = models.SlugField(verbose_name="Идентификатор жанра", max_length=50, unique=True)
+
+    class Meta:
+        verbose_name = "жанр"
+        verbose_name_plural = "Жанры"
+        ordering = ("name",)
 
     def __str__(self):
         return self.name
 
 
 class Title(models.Model):
-    name = models.CharField(max_length=256)
-    year = models.IntegerField()
+    name = models.CharField(verbose_name="Наименование произведения", max_length=256)
+    year = models.IntegerField(verbose_name="Год выпуска",)
     rating = models.FloatField(verbose_name='Рейтинг', validators=[MinValueValidator(1), MaxValueValidator(10)])
     description = models.TextField(verbose_name='Описание', max_length=256)
-    genre = models.ManyToManyField(Genre, through='GenreTitle')
+    genre = models.ManyToManyField(Genre, through='GenreTitle', verbose_name="Жанр")
     category = models.ForeignKey(
         Category, on_delete=models.CASCADE, related_name="titles",
-        null=True
+        null=True, verbose_name="Категория"
     )
+
+    class Meta:
+        verbose_name = "произведение"
+        verbose_name_plural = "Произведения"
+        ordering = ("name",)
 
     def __str__(self):
         return self.name
