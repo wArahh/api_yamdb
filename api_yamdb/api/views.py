@@ -1,4 +1,5 @@
 from rest_framework import viewsets
+from rest_framework import mixins
 
 
 from reviews.models import *
@@ -18,3 +19,16 @@ class CommentViewSet(viewsets.ModelViewSet):
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.all()
     serializer_class = TitleSerializer
+
+
+class CreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    pass
+
+
+class SignUpViewSet(CreateViewSet):
+    queryset = get_user_model().objects.all()
+    serializer_class = SignUpSerializer
+
+
+class GetTokenViewSet(viewsets.ViewSet):
+    pass

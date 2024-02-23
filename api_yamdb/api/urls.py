@@ -1,6 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
-from .views import *
+
+from rest_framework_simplejwt.views import TokenVerifyView
 
 from .views import *
 
@@ -20,7 +21,11 @@ router_v1.register(
     TitleViewSet,
     basename='title'
 )
-
+router_v1.register(
+    r'auth/signup',
+    SignUpViewSet,
+    basename='signup'
+)
 
 urlpatterns = [
     path('v1/', include(router_v1.urls)),
