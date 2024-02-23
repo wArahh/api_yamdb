@@ -1,6 +1,9 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
+
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
 from reviews.models import *
 from .utils import get_confirmation_code, send_email
 
@@ -40,8 +43,21 @@ class SignUpSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         confirmation_code = get_confirmation_code()
-        validated_data['confirmation_code'] = confirmation_code
-        user = get_user_model()
-        user.objects.create(**validated_data)
+        User = get_user_model()
+        user = User(**validated_data)
+        user.set_password(confirmation_code)
         send_email(to_email=validated_data['email'], code=confirmation_code)
         return user
+
+
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+
+        # Add custom claims
+        token['username'] = user.username
+        token['confirmation_code'] = user.confirmation_code
+        del token['password']
+
+        return token
