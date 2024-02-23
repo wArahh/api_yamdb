@@ -45,5 +45,3 @@ class SignUpSerializer(serializers.ModelSerializer):
         user.objects.create(**validated_data)
         send_email(to_email=validated_data['email'], code=confirmation_code)
         return user
-
-

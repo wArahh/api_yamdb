@@ -116,7 +116,6 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'TOKEN_OBTAIN_SERIALIZER': 'api.authentication.CustomTokenObtainPairSerializer',
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
