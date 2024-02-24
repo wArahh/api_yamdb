@@ -10,6 +10,12 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from reviews.models import *
 from .utils import get_confirmation_code, send_email
 
+import datetime as dt
+
+
+INCORRECT_YEAR = ('Нельзя добавлять произведение,'
+                  ' которое ещё не вышло!')
+
 
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
@@ -26,10 +32,25 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = ('text',)
 
 
-class TitleSerializer(serializers.ModelSerializer):
+class CategorySerializer(serializers.ModelSerializer):
     class Meta:
+        fields = ("name", "slug")
+        model = Category
+
+
+class GenreSerializer(serializers.ModelSerializer):
+    class Meta:
+        fields = ("name", "slug")
+        model = Genre
+
+
+class TitleSerializer(serializers.ModelSerializer):
+    year = serializers.SerializerMethodField()
+    genre = GenreSerializer(many=True)
+
+    class Meta:
+        fields = ("name", "year", "description", "genre", "category")
         model = Title
-        fields = '__all__'
 
 
 class SignUpSerializer(serializers.ModelSerializer):
@@ -69,3 +90,9 @@ class GetTokenSerializer(serializers.ModelSerializer):
                 'Не верный код'
             )
         return data
+
+    def validate_year(self, value):
+        year = dt.date.today().year
+        if not (value <= year):
+            raise serializers.ValidationError(INCORRECT_YEAR)
+        return value
