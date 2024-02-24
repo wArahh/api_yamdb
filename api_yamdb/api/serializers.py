@@ -1,8 +1,11 @@
-from django.contrib.auth import get_user_model
-from rest_framework import serializers
+from django.contrib.auth import get_user_model, authenticate
+from rest_framework import serializers, exceptions
+from rest_framework.fields import CharField
+from rest_framework.settings import api_settings
 from rest_framework.validators import UniqueTogetherValidator
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from reviews.models import *
 from .utils import get_confirmation_code, send_email
@@ -46,18 +49,23 @@ class SignUpSerializer(serializers.ModelSerializer):
         User = get_user_model()
         user = User(**validated_data)
         user.set_password(confirmation_code)
+        user.save()
         send_email(to_email=validated_data['email'], code=confirmation_code)
         return user
 
 
-class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
+class GetTokenSerializer(serializers.ModelSerializer):
 
-        # Add custom claims
-        token['username'] = user.username
-        token['confirmation_code'] = user.confirmation_code
-        del token['password']
+    class Meta:
+        model = get_user_model()
+        fields = ('confirmation_code', 'username')
+        # extra_kwargs = {'confirmation_code': {'write_only': True}}
 
-        return token
+    def validate(self, data):
+        User = get_user_model()
+        user = User.objects.get(username=data['username'])
+        if user.confirmation_code != data['confirmation_code']:
+            raise serializers.ValidationError(
+                'Не верный код'
+            )
+        return data

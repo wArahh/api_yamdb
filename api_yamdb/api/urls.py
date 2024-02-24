@@ -20,6 +20,11 @@ router_v1.register(
     TitleViewSet,
     basename='title'
 )
+# router_v1.register(
+#     r'auth/token',
+#     GetTokenViewSet,
+#     basename='token'
+# )
 router_v1.register(
     r'auth/signup',
     SignUpViewSet,
@@ -27,6 +32,6 @@ router_v1.register(
 )
 
 urlpatterns = [
+    path('v1/auth/token/', GetTokenViewSet().as_view()),
     path('v1/', include(router_v1.urls)),
-    path('v1/auth/token/', TokenObtainPairView.as_view(), name='token')
 ]

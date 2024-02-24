@@ -1,6 +1,9 @@
 from rest_framework import viewsets
 from rest_framework import mixins
-
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from reviews.models import *
 from .serializers import *
@@ -30,5 +33,18 @@ class SignUpViewSet(CreateViewSet):
     serializer_class = SignUpSerializer
 
 
-class GetTokenViewSet(viewsets.ViewSet):
-    pass
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+
+    return {
+        'access': str(refresh.access_token),
+    }
+
+
+class GetTokenViewSet(APIView):
+    def post(self, request):
+        serializer = GetTokenSerializer(data=request.data)
+        User = get_user_model()
+        serializer.is_valid()
+        user = User.objects.get(username=serializer.data['username'])
+        return Response(get_tokens_for_user(user))
