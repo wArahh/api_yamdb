@@ -2,7 +2,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework import filters, viewsets, mixins, permissions
+from rest_framework import filters, viewsets, mixins, permissions, status
 from django_filters.rest_framework import DjangoFilterBackend
 
 from .permissions import IsAdminOrReadOnly, IsAuthorOrAdmin
@@ -87,6 +87,21 @@ class SignUpViewSet(CreateViewSet):
     queryset = get_user_model().objects.all()
     serializer_class = SignUpSerializer
 
+    def create(self, request, *args, **kwargs):
+        print(request.data)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK, headers=headers)
+
+    @action(methods=['post'], detail=False, url_path='signup')
+    def signup(self, request):
+        serializer = SignUpSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        # headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK, headers=headers)
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -96,10 +111,14 @@ def get_tokens_for_user(user):
     }
 
 
-class GetTokenViewSet(APIView):
+class GetTokenAPIView(APIView):
     def post(self, request):
         serializer = GetTokenSerializer(data=request.data)
-        User = get_user_model()
-        serializer.is_valid()
-        user = User.objects.get(username=serializer.data['username'])
-        return Response(get_tokens_for_user(user))
+        serializer.is_valid(raise_exception=True)
+        return Response({'api': 'aapi'})
+
+
+class UsersViewSet(viewsets.ModelViewSet):
+    serializer_class = UsersSerializer
+    queryset = get_user_model().objects.all()
+

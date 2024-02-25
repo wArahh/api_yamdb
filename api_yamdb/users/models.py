@@ -10,7 +10,7 @@ CHOICES = (
 
 
 class User(AbstractUser):
-    confirmation_code = models.CharField(unique=True, max_length=200)
+    confirmation_code = models.CharField(max_length=200, blank=True)
     bio = models.TextField(verbose_name='Биография', blank=True, null=True)
     role = models.CharField(choices=CHOICES, default='user', max_length=150)
     password = models.CharField(max_length=255, blank=True, null=True)
