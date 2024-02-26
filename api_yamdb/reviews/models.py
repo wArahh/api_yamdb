@@ -103,6 +103,11 @@ class Title(models.Model):
     year = models.IntegerField(
         verbose_name='Год',
     )
+    rating = models.ForeignKey(
+        Reviews,
+        on_delete=models.CASCADE,
+        verbose_name='Оценка',
+    )
     description = models.TextField(
         verbose_name='Описание',
         max_length=256,
