@@ -1,17 +1,15 @@
-from django.contrib.auth import get_user_model, authenticate
-from rest_framework import serializers, exceptions
-from rest_framework.fields import CharField
+import datetime as dt
+
+from django.contrib.auth import get_user_model
+from rest_framework import exceptions, serializers
 from rest_framework.settings import api_settings
 from rest_framework.validators import UniqueTogetherValidator
-
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from reviews.models import *
+
 from .utils import get_confirmation_code, send_email
-
-import datetime as dt
-
 
 INCORRECT_YEAR = ('Нельзя добавлять произведение,'
                   ' которое ещё не вышло!')
@@ -29,18 +27,18 @@ class ReviewSerializer(serializers.ModelSerializer):
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Comments
-        fields = ('text',)
+        fields = '__all__'
 
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
-        fields = ("name", "slug")
+        exclude = ('id',)
         model = Category
 
 
 class GenreSerializer(serializers.ModelSerializer):
     class Meta:
-        fields = ("name", "slug")
+        exclude = ('id',)
         model = Genre
 
 
@@ -49,7 +47,7 @@ class TitleSerializer(serializers.ModelSerializer):
     genre = GenreSerializer(many=True)
 
     class Meta:
-        fields = ("name", "year", "description", "genre", "category")
+        fields = '__all__'
         model = Title
 
 

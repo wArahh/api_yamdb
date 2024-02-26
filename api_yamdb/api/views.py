@@ -1,15 +1,16 @@
+from django.db.models import Avg
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import mixins, permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework import filters, viewsets, mixins, permissions
-from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Avg
 
-from .permissions import *
 from reviews.models import *
-from .serializers import *
+
 from .mixins import *
+from .permissions import *
+from .serializers import *
 
 
 class ReviewViewSet(RCPermissions):
@@ -40,27 +41,6 @@ class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(
         average_score=Avg('rating__score')
     ).all()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class CreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
