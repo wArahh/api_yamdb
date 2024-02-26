@@ -93,35 +93,25 @@ class SignUpSerializer(serializers.ModelSerializer):
                 'Email уже существует'
             )
 
-        # if (
-        #     User.objects.filter(
-        #         email=data['email'],
-        #         username=data['username']
-        #     ).exists()
-        # ):
-        #     user = User.objects.get(username=data['username'], email=data['email'])
-        #     confirmation_code = get_confirmation_code()
-        #     user.set_password(confirmation_code)
-        #     user.save()
-        #     send_email(to_email=data['email'], code=confirmation_code)
-
         return data
 
     def create(self, validated_data):
         confirmation_code = get_confirmation_code()
         User = get_user_model()
-        print(f'data: {validated_data}')
-        if not User.objects.filter(**validated_data).exists():
-            user = User(**validated_data)
-            user.set_password(confirmation_code)
-            user.save()
-            send_email(to_email=validated_data['email'], code=confirmation_code)
-            return user
-        user = User.objects.get(**validated_data)
+        user = User(**validated_data)
         user.set_password(confirmation_code)
         user.save()
+        print(f'data: {user.confirmation_code}={confirmation_code}')
         send_email(to_email=validated_data['email'], code=confirmation_code)
         return user
+
+    def update(self, instance, validated_data):
+        confirmation_code = get_confirmation_code()
+        instance.set_password(confirmation_code)
+        send_email(to_email=instance.email, code=confirmation_code)
+        instance.save()
+        print(f'update data: {instance.confirmation_code}={confirmation_code}')
+        return instance
 
 
 class GetTokenSerializer(serializers.ModelSerializer):
