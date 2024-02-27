@@ -5,10 +5,9 @@ from django.core.mail import send_mail as send
 
 
 def get_confirmation_code():
-    User = get_user_model()
     code = ''
     while (
-        len(code) != 20 and not User.objects.filter(confirmation_code=code).exists()
+        len(code) != 20
     ):
         code += str(random.randint(0, 9))
 

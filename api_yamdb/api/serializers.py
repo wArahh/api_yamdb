@@ -1,11 +1,6 @@
-from django.contrib.auth import get_user_model, authenticate
-from rest_framework import serializers, exceptions
-from rest_framework.fields import CharField
-from rest_framework.settings import api_settings
+from django.contrib.auth import get_user_model
+from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
-
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.tokens import RefreshToken
 
 from reviews.models import *
 from .utils import get_confirmation_code, send_email
@@ -61,10 +56,11 @@ class TitleSerializer(serializers.ModelSerializer):
 
 
 class SignUpSerializer(serializers.ModelSerializer):
+    role = serializers.HiddenField(default='user')
 
     class Meta:
         model = get_user_model()
-        fields = ('email', 'username')
+        fields = ('email', 'username', 'role')
         extra_kwargs = {
             'email': {'required': True},
             'username': {'required': True}
@@ -97,38 +93,47 @@ class SignUpSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         confirmation_code = get_confirmation_code()
+        print(f'code from create: {confirmation_code}')
         User = get_user_model()
         user = User(**validated_data)
-        user.set_password(confirmation_code)
+        user.set_confirmation_code(confirmation_code)
+        # user.confirmation_code = confirmation_code
         user.save()
-        print(f'data: {user.confirmation_code}={confirmation_code}')
         send_email(to_email=validated_data['email'], code=confirmation_code)
         return user
 
     def update(self, instance, validated_data):
         confirmation_code = get_confirmation_code()
-        instance.set_password(confirmation_code)
+        instance.set_confirmation_code(confirmation_code)
+        # instance.confirmation_code = validated_data.get('confirmation_code')
         send_email(to_email=instance.email, code=confirmation_code)
         instance.save()
-        print(f'update data: {instance.confirmation_code}={confirmation_code}')
+        print(f'code from update: {confirmation_code}')
         return instance
 
 
-class GetTokenSerializer(serializers.ModelSerializer):
+class GetTokenSerializer(serializers.Serializer):
+    confirmation_code = serializers.CharField(required=True)
+    username = serializers.CharField(required=True)
 
     class Meta:
-        model = get_user_model()
         fields = ('confirmation_code', 'username')
-        extra_kwargs = {
-            'confirmation_code': {'required': True},
-            'username': {'required': True}
-        }
 
-    def validate_username(self, username):
+    def validate(self, data):
+        print('data', data)
+        username = data['username']
+        confirmation_code = data['confirmation_code']
         User = get_user_model()
         if not User.objects.filter(username=username).exists():
             raise UserNotExistsError()
-        return username
+        user = User.objects.get(username=username)
+
+        if not user.check_confirmation_code(confirmation_code):
+            raise serializers.ValidationError(
+                'Неверный код подтверждения!'
+            )
+
+        return user
 
 
 class UsersSerializer(serializers.ModelSerializer):
@@ -139,7 +144,8 @@ class UsersSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'email': {'required': True},
             'username': {'required': True},
-            'confirmation_code': {'required': False}
+            'confirmation_code': {'required': False},
+            'role': {'default': 'user'}
         }
         validators = [
             UniqueTogetherValidator(

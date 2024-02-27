@@ -1,7 +1,8 @@
 from rest_framework.decorators import action
+from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
 from rest_framework import filters, viewsets, mixins, permissions, status
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -80,13 +81,25 @@ class TitleViewSet(viewsets.ModelViewSet):
     serializer_class = TitleSerializer
 
 
+def get_tokens_for_user(user):
+    refresh = AccessToken.for_user(user)
+
+    return {
+        'token': str(refresh),
+    }
+
+
 class CreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    pass
+
+
+class ListCreateViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
     pass
 
 
 class SignUpViewSet(CreateViewSet):
 
-    @action(methods=['post'], detail=False, url_path='signup')
+    @action(methods=['post'], detail=False, url_path='signup', permission_classes=[permissions.AllowAny])
     def signup(self, request):
         User = get_user_model()
         if not User.objects.filter(**request.data).exists():
@@ -100,23 +113,22 @@ class SignUpViewSet(CreateViewSet):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-
-def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
-
-    return {
-        'access': str(refresh.access_token),
-    }
-
-
-class GetTokenAPIView(APIView):
-    def post(self, request):
+    @action(methods=['post'], detail=False, url_path='token', permission_classes=[permissions.AllowAny])
+    def token(self, request):
         serializer = GetTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        return Response({'api': 'aapi'})
+        user = serializer.validated_data
+        return Response(get_tokens_for_user(user))
 
 
-class UsersViewSet(viewsets.ModelViewSet):
+class UsersViewSet(ListCreateViewSet):
     serializer_class = UsersSerializer
     queryset = get_user_model().objects.all()
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('username',)
+    pagination_class = PageNumberPagination
+    permission_classes = (permissions.AllowAny,)
+
+
+
 

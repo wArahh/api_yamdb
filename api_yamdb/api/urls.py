@@ -42,6 +42,5 @@ router_v1.register(
     basename='users'
 )
 urlpatterns = [
-    path('v1/auth/token/', GetTokenAPIView().as_view()),
     path('v1/', include(router_v1.urls)),
 ]

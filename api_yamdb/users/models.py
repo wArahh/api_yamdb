@@ -1,4 +1,4 @@
-from django.contrib.auth.hashers import make_password
+from django.contrib.auth.hashers import make_password, check_password
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -16,11 +16,14 @@ CHOICES = (
 class User(AbstractUser):
     confirmation_code = models.CharField(verbose_name='код подтверждения', max_length=200, blank=True)
     bio = models.TextField(verbose_name='биография', blank=True, null=True)
-    role = models.CharField(verbose_name='роль', choices=CHOICES, default=USER, max_length=150)
+    role = models.CharField(verbose_name='роль', choices=CHOICES, max_length=150)
     password = models.CharField(max_length=255, blank=True, null=True)
 
-    def set_password(self, confirmation_code):
+    def set_confirmation_code(self, confirmation_code):
         self.confirmation_code = make_password(confirmation_code)
+
+    def check_confirmation_code(self, confirmation_code):
+        return check_password(confirmation_code, self.confirmation_code)
 
     @property
     def is_user(self):
