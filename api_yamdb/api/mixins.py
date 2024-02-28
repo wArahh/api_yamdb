@@ -21,6 +21,7 @@ class CDLMixin(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet
 ):
+    pass
 
   
 class CreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):

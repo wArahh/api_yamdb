@@ -1,9 +1,10 @@
 from django.db.models import Avg
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import mixins, permissions, viewsets
+from rest_framework import mixins, permissions, viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.pagination import PageNumberPagination
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from reviews.models import *
@@ -91,7 +92,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         methods=['GET', 'PATCH'],
         detail=False,
         url_path='me',
-        permission_classes=(IsAuthenticated,)
+        permission_classes=(permissions.IsAuthenticated,)
     )
     def get_current_user_info(self, request):
         serializer = UsersSerializer(request.user)
