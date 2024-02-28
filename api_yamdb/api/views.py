@@ -10,6 +10,7 @@ from .permissions import IsAdminOrReadOnly, IsAuthorOrAdmin
 from reviews.models import *
 from .serializers import *
 from .utils import *
+from .mixins import CreateViewSet
 
 
 class ReviewViewSet(
@@ -81,22 +82,6 @@ class TitleViewSet(viewsets.ModelViewSet):
     serializer_class = TitleSerializer
 
 
-def get_tokens_for_user(user):
-    refresh = AccessToken.for_user(user)
-
-    return {
-        'token': str(refresh),
-    }
-
-
-class CreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
-    pass
-
-
-class ListCreateViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
-    pass
-
-
 class SignUpViewSet(CreateViewSet):
 
     @action(methods=['post'], detail=False, url_path='signup', permission_classes=[permissions.AllowAny])
@@ -118,17 +103,33 @@ class SignUpViewSet(CreateViewSet):
         serializer = GetTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data
-        return Response(get_tokens_for_user(user))
+        access_token = AccessToken.for_user(user)
+        return Response({'token': str(access_token)}, status=status.HTTP_200_OK)
 
 
-class UsersViewSet(ListCreateViewSet):
+class UsersListCreateViewSet(viewsets.ModelViewSet):
     serializer_class = UsersSerializer
     queryset = get_user_model().objects.all()
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
     pagination_class = PageNumberPagination
     permission_classes = (permissions.AllowAny,)
+    lookup_field = 'username'
 
+    @action(
+        methods=['GET', 'PATCH'],
+        detail=False,
+        url_path='me')
+    def get_current_user_info(self, request):
+        serializer = UsersSerializer(request.user)
+        if request.method == 'PATCH':
+            serializer = UsersSerializer(
+                request.user,
+                data=request.data,
+                partial=True
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
-
-
+        return Response(serializer.data)

@@ -38,7 +38,7 @@ router_v1.register(
 )
 router_v1.register(
     r'users',
-    UsersViewSet,
+    UsersListCreateViewSet,
     basename='users'
 )
 urlpatterns = [
