@@ -1,17 +1,15 @@
+from datetime import timedelta
 from pathlib import Path
+from django.core.management.utils import get_random_secret_key
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'p&l%385148kslhtyn^##a1)ilz@4zqj=rq&agdol^##zgl9(vs'
+SECRET_KEY = get_random_secret_key()
 
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
-
-
-# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -20,6 +18,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework_simplejwt',
+    'users',
+    'reviews',
+    'api',
 ]
 
 MIDDLEWARE = [
@@ -84,9 +86,9 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'ru'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Europe/Moscow'
 
 USE_I18N = True
 
@@ -100,3 +102,26 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 STATICFILES_DIRS = ((BASE_DIR / 'static/'),)
+
+AUTH_USER_MODEL = 'users.User'
+
+EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+
+EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
+
+REST_FRAMEWORK = {
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'PAGE_SIZE': 5
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
+
+CONFIRMATION_CODE_LENGTH = 20
