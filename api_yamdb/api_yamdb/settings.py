@@ -2,6 +2,7 @@ from datetime import timedelta
 from pathlib import Path
 from django.core.management.utils import get_random_secret_key
 
+from django.core.management.utils import get_random_secret_key
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -18,6 +19,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
     'rest_framework_simplejwt',
     'users',
     'reviews',

@@ -153,3 +153,5 @@ media/
 !**/migrations/__init__.py
 
 sent_emails/
+.migrations/
+

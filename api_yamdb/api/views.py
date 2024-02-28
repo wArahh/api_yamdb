@@ -1,83 +1,46 @@
+from django.db.models import Avg
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import mixins, permissions, viewsets
 from rest_framework.decorators import action
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import AccessToken
-from rest_framework import filters, viewsets, mixins, permissions, status
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
 
-from .permissions import IsAdminOrReadOnly, IsAuthorOrAdmin, AdminOnly
 from reviews.models import *
+
+from .mixins import *
+from .permissions import *
 from .serializers import *
-from .mixins import CreateViewSet
 
 
-class ReviewViewSet(
-    mixins.CreateModelMixin,
-    mixins.ListModelMixin,
-    mixins.RetrieveModelMixin,
-    mixins.UpdateModelMixin,
-    mixins.DestroyModelMixin,
-    viewsets.GenericViewSet,
-):
+class ReviewViewSet(RCPermissions):
     queryset = Reviews.objects.all()
     serializer_class = ReviewSerializer
 
-    def get_permissions(self):
-        if self.action in ['create']:
-            permission_classes = [permissions.IsAuthenticated]
-        elif self.action in ['update', 'partial_update', 'destroy']:
-            permission_classes = [IsAuthorOrAdmin]
-        else:
-            permission_classes = [permissions.AllowAny]
-        return [permission() for permission in permission_classes]
 
-
-class CommentViewSet(
-    mixins.CreateModelMixin,
-    mixins.ListModelMixin,
-    mixins.RetrieveModelMixin,
-    mixins.UpdateModelMixin,
-    mixins.DestroyModelMixin,
-    viewsets.GenericViewSet,
-):
+class CommentViewSet(RCPermissions):
     queryset = Comments.objects.all()
     serializer_class = CommentSerializer
 
-    def get_permissions(self):
-        if self.action in ['create']:
-            permission_classes = [permissions.IsAuthenticated]
-        elif self.action in ['update', 'partial_update', 'destroy']:
-            permission_classes = [IsAuthorOrAdmin]
-        else:
-            permission_classes = [permissions.AllowAny]
-        return [permission() for permission in permission_classes]
 
-
-class CreateListDestroyViewSet(mixins.CreateModelMixin, mixins.ListModelMixin,
-                               mixins.DestroyModelMixin,
-                               viewsets.GenericViewSet):
-    lookup_field = 'slug'
-
-
-class CategoryViewSet(CreateListDestroyViewSet):
+class CategoryViewSet(CDLMixin):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = (IsAdminOrReadOnly,)
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ("name",)
 
 
-class GenreViewSet(CreateListDestroyViewSet):
+class GenreViewSet(CDLMixin):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     permission_classes = (IsAdminOrReadOnly,)
-    filter_backends = (filters.SearchFilter,)
-    search_fields = ("name",)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
     serializer_class = TitleSerializer
+    queryset = Title.objects.annotate(
+        average_score=Avg('rating__score')
+    ).all()
+    permission_classes = (IsAdminOrReadOnly,)
 
 
 class SignUpViewSet(CreateViewSet):
