@@ -37,10 +37,10 @@ class GenreViewSet(CDLMixin):
 
 class TitleViewSet(viewsets.ModelViewSet):
     serializer_class = TitleSerializer
-    permission_classes = (IsAdminOrReadOnly,)
     queryset = Title.objects.annotate(
         average_score=Avg('rating__score')
     ).all()
+    permission_classes = (IsAdminOrReadOnly,)
 
 
 class CreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):

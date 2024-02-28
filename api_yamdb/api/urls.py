@@ -26,14 +26,14 @@ router_v1.register(
     basename='signup'
 )
 router_v1.register(
-    r"categories",
+    r'categories',
     CategoryViewSet,
-    basename="categories"
+    basename='categories'
 )
 router_v1.register(
-    r"genres",
+    r'genres',
     GenreViewSet,
-    basename="genres"
+    basename='genres'
 )
 
 urlpatterns = [
