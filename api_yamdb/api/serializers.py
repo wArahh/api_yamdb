@@ -43,8 +43,6 @@ class GenreSerializer(serializers.ModelSerializer):
 
 
 class TitleSerializer(serializers.ModelSerializer):
-    year = serializers.SerializerMethodField()
-    genre = GenreSerializer(many=True)
 
     class Meta:
         fields = '__all__'
