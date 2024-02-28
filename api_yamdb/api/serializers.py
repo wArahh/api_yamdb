@@ -93,11 +93,9 @@ class SignUpSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         confirmation_code = get_confirmation_code()
-        print(f'code from create: {confirmation_code}')
         User = get_user_model()
         user = User(**validated_data)
         user.set_confirmation_code(confirmation_code)
-        # user.confirmation_code = confirmation_code
         user.save()
         send_email(to_email=validated_data['email'], code=confirmation_code)
         return user
@@ -105,7 +103,6 @@ class SignUpSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         confirmation_code = get_confirmation_code()
         instance.set_confirmation_code(confirmation_code)
-        # instance.confirmation_code = validated_data.get('confirmation_code')
         send_email(to_email=instance.email, code=confirmation_code)
         instance.save()
         print(f'code from update: {confirmation_code}')
@@ -140,7 +137,14 @@ class UsersSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = get_user_model()
-        fields = ('username', 'email', 'first_name', 'last_name', 'bio', 'role')
+        fields = (
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'bio',
+            'role'
+        )
         extra_kwargs = {
             'email': {'required': True},
             'username': {'required': True},
@@ -153,3 +157,15 @@ class UsersSerializer(serializers.ModelSerializer):
                 fields=('email', 'username',),
             )
         ]
+
+    def validate_role(self, role):
+        user = self.context['request'].user
+        if (
+            role != 'user'
+            and user.is_admin
+            and not user.is_superuser
+        ):
+            raise serializers.ValidationError(
+                'Вы не можете присвоить себе статус'
+            )
+        return role

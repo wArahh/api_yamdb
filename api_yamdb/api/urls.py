@@ -1,7 +1,5 @@
 from django.urls import include, path
 from rest_framework.routers import SimpleRouter
-from rest_framework_simplejwt.views import TokenObtainPairView
-from .views import *
 
 from .views import *
 
@@ -38,7 +36,7 @@ router_v1.register(
 )
 router_v1.register(
     r'users',
-    UsersListCreateViewSet,
+    UsersViewSet,
     basename='users'
 )
 urlpatterns = [

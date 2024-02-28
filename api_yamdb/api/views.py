@@ -1,15 +1,13 @@
 from rest_framework.decorators import action
-from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken, AccessToken
+from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework import filters, viewsets, mixins, permissions, status
-from django_filters.rest_framework import DjangoFilterBackend
 
-from .permissions import IsAdminOrReadOnly, IsAuthorOrAdmin
+from .permissions import IsAdminOrReadOnly, IsAuthorOrAdmin, AdminOnly
 from reviews.models import *
 from .serializers import *
-from .utils import *
 from .mixins import CreateViewSet
 
 
@@ -84,7 +82,12 @@ class TitleViewSet(viewsets.ModelViewSet):
 
 class SignUpViewSet(CreateViewSet):
 
-    @action(methods=['post'], detail=False, url_path='signup', permission_classes=[permissions.AllowAny])
+    @action(
+        methods=['post'],
+        detail=False,
+        url_path='signup',
+        permission_classes=[permissions.AllowAny]
+    )
     def signup(self, request):
         User = get_user_model()
         if not User.objects.filter(**request.data).exists():
@@ -98,7 +101,12 @@ class SignUpViewSet(CreateViewSet):
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(methods=['post'], detail=False, url_path='token', permission_classes=[permissions.AllowAny])
+    @action(
+        methods=['post'],
+        detail=False,
+        url_path='token',
+        permission_classes=[permissions.AllowAny]
+    )
     def token(self, request):
         serializer = GetTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -107,26 +115,29 @@ class SignUpViewSet(CreateViewSet):
         return Response({'token': str(access_token)}, status=status.HTTP_200_OK)
 
 
-class UsersListCreateViewSet(viewsets.ModelViewSet):
+class UsersViewSet(viewsets.ModelViewSet):
     serializer_class = UsersSerializer
     queryset = get_user_model().objects.all()
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
     pagination_class = PageNumberPagination
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (permissions.IsAuthenticated, AdminOnly)
     lookup_field = 'username'
 
     @action(
         methods=['GET', 'PATCH'],
         detail=False,
-        url_path='me')
+        url_path='me',
+        permission_classes=(IsAuthenticated,)
+    )
     def get_current_user_info(self, request):
         serializer = UsersSerializer(request.user)
         if request.method == 'PATCH':
             serializer = UsersSerializer(
                 request.user,
                 data=request.data,
-                partial=True
+                partial=True,
+                context={'request': request}
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()

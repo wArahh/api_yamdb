@@ -1,13 +1,13 @@
 import random
 
-from django.contrib.auth import get_user_model
 from django.core.mail import send_mail as send
+from django.conf import settings
 
 
 def get_confirmation_code():
     code = ''
     while (
-        len(code) != 20
+        len(code) != settings.CONFIRMATION_CODE_LENGTH
     ):
         code += str(random.randint(0, 9))
 
