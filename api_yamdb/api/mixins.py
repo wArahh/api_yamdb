@@ -1,4 +1,4 @@
-from rest_framework import mixins, permissions, viewsets
+from rest_framework import mixins, viewsets, permissions
 
 from .permissions import IsAuthorOrAdmin
 
@@ -21,4 +21,7 @@ class CDLMixin(
     mixins.DestroyModelMixin,
     viewsets.GenericViewSet
 ):
+
+  
+class CreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     pass

@@ -43,27 +43,67 @@ class TitleViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdminOrReadOnly,)
 
 
-class CreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
-    pass
-
-
 class SignUpViewSet(CreateViewSet):
-    queryset = get_user_model().objects.all()
-    serializer_class = SignUpSerializer
 
-
-def get_tokens_for_user(user):
-    refresh = RefreshToken.for_user(user)
-
-    return {
-        'access': str(refresh.access_token),
-    }
-
-
-class GetTokenViewSet(APIView):
-    def post(self, request):
-        serializer = GetTokenSerializer(data=request.data)
+    @action(
+        methods=['post'],
+        detail=False,
+        url_path='signup',
+        permission_classes=[permissions.AllowAny]
+    )
+    def signup(self, request):
         User = get_user_model()
-        serializer.is_valid()
-        user = User.objects.get(username=serializer.data['username'])
-        return Response(get_tokens_for_user(user))
+        if not User.objects.filter(**request.data).exists():
+            serializer = SignUpSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        user = User.objects.get(**request.data)
+        serializer = SignUpSerializer(data=request.data, instance=user, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(
+        methods=['post'],
+        detail=False,
+        url_path='token',
+        permission_classes=[permissions.AllowAny]
+    )
+    def token(self, request):
+        serializer = GetTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data
+        access_token = AccessToken.for_user(user)
+        return Response({'token': str(access_token)}, status=status.HTTP_200_OK)
+
+
+class UsersViewSet(viewsets.ModelViewSet):
+    serializer_class = UsersSerializer
+    queryset = get_user_model().objects.all()
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('username',)
+    pagination_class = PageNumberPagination
+    permission_classes = (permissions.IsAuthenticated, AdminOnly)
+    lookup_field = 'username'
+
+    @action(
+        methods=['GET', 'PATCH'],
+        detail=False,
+        url_path='me',
+        permission_classes=(IsAuthenticated,)
+    )
+    def get_current_user_info(self, request):
+        serializer = UsersSerializer(request.user)
+        if request.method == 'PATCH':
+            serializer = UsersSerializer(
+                request.user,
+                data=request.data,
+                partial=True,
+                context={'request': request}
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.data)

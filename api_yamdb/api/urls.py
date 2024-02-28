@@ -21,15 +21,23 @@ router_v1.register(
     basename='title'
 )
 router_v1.register(
-    r'auth/signup',
+    r'auth',
     SignUpViewSet,
     basename='signup'
 )
+
+router_v1.register(
+    r'users',
+    UsersViewSet,
+    basename='users'
+)
+
 router_v1.register(
     r'categories',
     CategoryViewSet,
     basename='categories'
 )
+
 router_v1.register(
     r'genres',
     GenreViewSet,
@@ -37,6 +45,5 @@ router_v1.register(
 )
 
 urlpatterns = [
-    path('v1/auth/token/', GetTokenViewSet().as_view()),
     path('v1/', include(router_v1.urls)),
 ]
