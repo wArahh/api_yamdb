@@ -18,7 +18,7 @@ router_v1.register(
 router_v1.register(
     r'titles',
     TitleViewSet,
-    basename='title'
+    basename='titles'
 )
 router_v1.register(
     r'auth',
