@@ -1,13 +1,12 @@
 from django.db.models import Avg
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import mixins, permissions, viewsets, filters, status
+from rest_framework import filters, status
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import AccessToken
 
-from reviews.models import *
+from reviews.models import Reviews, Comments, Category, Genre, Title, User
 
 from .mixins import *
 from .permissions import *
@@ -53,7 +52,6 @@ class SignUpViewSet(CreateViewSet):
         permission_classes=[permissions.AllowAny]
     )
     def signup(self, request):
-        User = get_user_model()
         if not User.objects.filter(**request.data).exists():
             serializer = SignUpSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -81,18 +79,18 @@ class SignUpViewSet(CreateViewSet):
 
 class UsersViewSet(viewsets.ModelViewSet):
     serializer_class = UsersSerializer
-    queryset = get_user_model().objects.all()
+    queryset = User.objects.all()
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
     pagination_class = PageNumberPagination
-    permission_classes = (permissions.IsAuthenticated, AdminOnly)
+    permission_classes = (IsAuthenticated, AdminOnly)
     lookup_field = 'username'
 
     @action(
         methods=['GET', 'PATCH'],
         detail=False,
         url_path='me',
-        permission_classes=(permissions.IsAuthenticated,)
+        permission_classes=(IsAuthenticated,)
     )
     def get_current_user_info(self, request):
         serializer = UsersSerializer(request.user)

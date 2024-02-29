@@ -1,20 +1,13 @@
-from django.contrib.auth import get_user_model
-from rest_framework.validators import UniqueTogetherValidator
-
 from reviews.models import *
-from .utils import get_confirmation_code, send_email
 from .exceptions import UserNotExistsError
 
 import datetime as dt
 
 from django.contrib.auth import get_user_model
-from rest_framework import exceptions, serializers
-from rest_framework.settings import api_settings
+from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.tokens import RefreshToken
 
-from reviews.models import *
+from reviews.models import Reviews, Comments, Category, Genre, Title, User
 
 from .utils import get_confirmation_code, send_email
 
@@ -64,12 +57,11 @@ class TitleSerializer(serializers.ModelSerializer):
         return value
 
 
-      
 class SignUpSerializer(serializers.ModelSerializer):
     role = serializers.HiddenField(default='user')
 
     class Meta:
-        model = get_user_model()
+        model = User
         fields = ('email', 'username', 'role')
         extra_kwargs = {
             'email': {'required': True},
@@ -77,7 +69,7 @@ class SignUpSerializer(serializers.ModelSerializer):
         }
         validators = [
             UniqueTogetherValidator(
-                queryset=get_user_model().objects.all(),
+                queryset=User.objects.all(),
                 fields=('email', 'username',),
             )
         ]
@@ -90,7 +82,6 @@ class SignUpSerializer(serializers.ModelSerializer):
         return username
 
     def validate(self, data):
-        User = get_user_model()
         if (
             User.objects.filter(email=data['email']).exists()
             and not User.objects.filter(username=data['username']).exists()
@@ -103,7 +94,6 @@ class SignUpSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         confirmation_code = get_confirmation_code()
-        User = get_user_model()
         user = User(**validated_data)
         user.set_confirmation_code(confirmation_code)
         user.save()
@@ -127,10 +117,8 @@ class GetTokenSerializer(serializers.Serializer):
         fields = ('confirmation_code', 'username')
 
     def validate(self, data):
-        print('data', data)
         username = data['username']
         confirmation_code = data['confirmation_code']
-        User = get_user_model()
         if not User.objects.filter(username=username).exists():
             raise UserNotExistsError()
         user = User.objects.get(username=username)
@@ -146,7 +134,7 @@ class GetTokenSerializer(serializers.Serializer):
 class UsersSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = get_user_model()
+        model = User
         fields = (
             'username',
             'email',
@@ -172,7 +160,7 @@ class UsersSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         if (
             role != 'user'
-            and user.is_admin
+            and not user.is_admin
             and not user.is_superuser
         ):
             raise serializers.ValidationError(
