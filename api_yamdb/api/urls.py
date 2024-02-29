@@ -30,7 +30,7 @@ router_v1.register(
 router_v1.register(
     r'auth',
     SignUpViewSet,
-    basename='signup'
+    basename='auth'
 )
 
 router_v1.register(

@@ -1,4 +1,4 @@
-from .exceptions import UserNotExistsError
+from .exceptions import UserNotExistsError, EmailExistsError
 
 import datetime as dt
 
@@ -166,3 +166,8 @@ class UsersSerializer(serializers.ModelSerializer):
                 'Вы не можете присвоить себе статус'
             )
         return role
+
+    def validate_email(self, email):
+        if User.objects.filter(email=email).exists():
+            raise EmailExistsError()
+        return email

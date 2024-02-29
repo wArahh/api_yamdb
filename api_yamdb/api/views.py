@@ -8,6 +8,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 
 from reviews.models import Reviews, Comments, Category, Genre, Title, User
 
+from .exceptions import PutMethodError
 from .mixins import RCPermissions, CDLMixin, CreateViewSet
 from .permissions import IsAdminOrReadOnly, AdminOnly
 from .serializers import (
@@ -42,6 +43,7 @@ class GenreViewSet(CDLMixin):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     permission_classes = (IsAdminOrReadOnly,)
+    pagination_class = PageNumberPagination
 
 
 class TitleViewSet(viewsets.ModelViewSet):
@@ -99,6 +101,15 @@ class UsersViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPagination
     permission_classes = (IsAuthenticated, AdminOnly)
     lookup_field = 'username'
+
+    def update(self, request, *args, **kwargs):
+        if request.method == 'PUT':
+            raise PutMethodError()
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(
         methods=['GET', 'PATCH'],

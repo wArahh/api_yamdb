@@ -26,3 +26,14 @@ class CDLMixin(
 
 class CreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     pass
+
+
+class UsersListDetailViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.UpdateModelMixin,
+    viewsets.GenericViewSet
+):
+    pass
