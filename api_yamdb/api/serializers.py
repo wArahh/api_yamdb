@@ -1,4 +1,3 @@
-from reviews.models import *
 from .exceptions import UserNotExistsError
 
 import datetime as dt
