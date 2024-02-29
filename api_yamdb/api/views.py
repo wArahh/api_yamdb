@@ -53,7 +53,6 @@ class GenreViewSet(CDLMixin):
     lookup_field = 'slug'
 
 
-
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(
         average_score=Avg('rating__score')

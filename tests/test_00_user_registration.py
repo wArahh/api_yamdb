@@ -347,12 +347,12 @@ class Test00UserRegistration:
             '200.'
         )
 
-        # response = client.post(self.URL_SIGNUP, data=valid_data)
-        # assert response.status_code == HTTPStatus.OK, (
-        #     f'Проверьте, что повторный POST-запрос к `{self.URL_SIGNUP}` с '
-        #     'данными зарегистрированного пользователя возвращает ответ со '
-        #     'статусом 200.'
-        # )
+        response = client.post(self.URL_SIGNUP, data=valid_data)
+        assert response.status_code == HTTPStatus.OK, (
+            f'Проверьте, что повторный POST-запрос к `{self.URL_SIGNUP}` с '
+            'данными зарегистрированного пользователя возвращает ответ со '
+            'статусом 200.'
+        )
 
     def test_get_confirmation_code_for_user_created_by_admin(
             self, admin_client, client, django_user_model
@@ -369,9 +369,9 @@ class Test00UserRegistration:
             'должен быть создан новый пользователь.'
         )
 
-        # response = client.post(self.URL_SIGNUP, data=valid_data)
-        # assert response.status_code == HTTPStatus.OK, (
-        #     f'Проверьте, что POST-запрос к {self.URL_SIGNUP} с данными '
-        #     'пользователя, созданного администратором,  возвращает ответ '
-        #     'со статусом 200.'
-        # )
+        response = client.post(self.URL_SIGNUP, data=valid_data)
+        assert response.status_code == HTTPStatus.OK, (
+            f'Проверьте, что POST-запрос к {self.URL_SIGNUP} с данными '
+            'пользователя, созданного администратором,  возвращает ответ '
+            'со статусом 200.'
+        )
