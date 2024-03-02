@@ -1,13 +1,16 @@
-from django.db.models import Avg
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from rest_framework_simplejwt.tokens import AccessToken
+from django_filters.rest_framework import DjangoFilterBackend
+from django.shortcuts import get_object_or_404
 
-from reviews.models import Reviews, Comments, Category, Genre, Title, User
+from reviews.models import Review, Comments, Category, Genre, Title, User
+from django.db.models import Avg
 
+from .filters import GenreCategoryFilter
 from .exceptions import PutMethodError
 from .mixins import RCPermissions, CDLMixin, CreateViewSet
 from .permissions import IsAdminOrReadOnly, AdminOnly
@@ -19,18 +22,35 @@ from .serializers import (
     TitleSerializer,
     SignUpSerializer,
     GetTokenSerializer,
-    UsersSerializer
+    UsersSerializer,
+    TitleGetSerializer,
 )
 
 
 class ReviewViewSet(RCPermissions):
-    queryset = Reviews.objects.all()
     serializer_class = ReviewSerializer
+    pagination_class = PageNumberPagination
+    http_method_names = ('get', 'post', 'patch', 'delete',)
+    queryset = Review.objects.all()
+
+    def perform_create(self, serializer):
+        serializer.save(
+            author=self.request.user,
+            title=Title.objects.get(id=self.kwargs['title_id'])
+        )
 
 
 class CommentViewSet(RCPermissions):
-    queryset = Comments.objects.all()
     serializer_class = CommentSerializer
+    pagination_class = PageNumberPagination
+    http_method_names = ('get', 'post', 'patch', 'delete',)
+    queryset = Comments.objects.all()
+
+    def perform_create(self, serializer):
+        review = get_object_or_404(
+            Review,
+            id=self.kwargs.get('review_id'))
+        serializer.save(author=self.request.user, review=review)
 
 
 class CategoryViewSet(CDLMixin):
@@ -53,17 +73,24 @@ class GenreViewSet(CDLMixin):
     lookup_field = 'slug'
 
 
-
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.annotate(
-        average_score=Avg('rating__score')
-    ).all()
-    serializer_class = TitleSerializer
+    queryset = Title.objects.annotate(rating=Avg('reviews__score')).all()
+    pagination_class = PageNumberPagination
     permission_classes = (IsAdminOrReadOnly,)
+    http_method_names = ('get', 'post', 'patch', 'delete',)
+    filter_backends = (
+        DjangoFilterBackend,
+        GenreCategoryFilter,
+    )
+    filterset_fields = ('name', 'year', 'category__slug', 'genre__slug',)
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return TitleGetSerializer
+        return TitleSerializer
 
 
 class SignUpViewSet(CreateViewSet):
-
     @action(
         methods=['post'],
         detail=False,

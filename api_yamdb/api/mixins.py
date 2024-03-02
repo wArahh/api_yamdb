@@ -1,15 +1,15 @@
 from rest_framework import mixins, viewsets, permissions
 
-from .permissions import IsAuthorOrAdmin
+from .permissions import IsAuthorOrAdminOrModerator
 
 
 class RCPermissions(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['create']:
-            permission_classes = [permissions.IsAuthenticated]
+            permission_classes = (permissions.IsAuthenticated,)
         elif self.action in ['update', 'partial_update', 'destroy']:
-            permission_classes = [IsAuthorOrAdmin]
+            permission_classes = (IsAuthorOrAdminOrModerator,)
         else:
             permission_classes = [permissions.AllowAny]
         return [permission() for permission in permission_classes]
