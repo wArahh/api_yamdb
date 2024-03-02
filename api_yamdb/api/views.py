@@ -36,7 +36,9 @@ class ReviewViewSet(RCPermissions):
     def perform_create(self, serializer):
         serializer.save(
             author=self.request.user,
-            title=Title.objects.get(id=self.kwargs['title_id'])
+            title=get_object_or_404(
+                Title, id=self.kwargs.get('title_id')
+            )
         )
 
 

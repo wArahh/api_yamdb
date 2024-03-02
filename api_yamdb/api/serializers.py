@@ -16,6 +16,7 @@ INCORRECT_YEAR = ('Нельзя добавлять произведение,'
                   ' которое ещё не вышло!')
 ZERO_SCORE = 'Оценка не может быть ниже нуля!'
 MORE_TEN_SCORE = 'Оценка не может быть выше десяти!'
+REPEAT_REVIEW = 'Нельзя создать два ревью на одно произведение'
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -29,6 +30,10 @@ class ReviewSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
+    class Meta:
+        fields = '__all__'
+        model = Review
+
     def validate_score(self, value):
         if value < 0:
             raise serializers.ValidationError(ZERO_SCORE)
@@ -36,9 +41,14 @@ class ReviewSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(MORE_TEN_SCORE)
         return value
 
-    class Meta:
-        fields = '__all__'
-        model = Review
+    def validate(self, data):
+        request = self.context['request']
+        title_id = self.context['view'].kwargs.get('title_id')
+        user = request.user
+        review = Review.objects.filter(title=title_id, author=user).exists()
+        if review and request.method == 'POST':
+            raise ValidationError(REPEAT_REVIEW)
+        return data
 
 
 class CommentSerializer(serializers.ModelSerializer):

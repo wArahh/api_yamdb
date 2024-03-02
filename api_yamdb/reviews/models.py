@@ -5,68 +5,6 @@ from django.db import models
 User = get_user_model()
 
 
-class Review(models.Model):
-    title = models.ForeignKey(
-        'Title',
-        on_delete=models.CASCADE,
-        verbose_name='Произведение'
-    )
-    text = models.TextField(
-        verbose_name='Текст',
-        max_length=256,
-    )
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Автор',
-    )
-    score = models.IntegerField(
-        verbose_name='Оценка',
-        validators=[MinValueValidator(1), MaxValueValidator(10)],
-    )
-    pub_date = models.DateField(
-        verbose_name='Дата публикации',
-        auto_now_add=True,
-    )
-
-    class Meta:
-        verbose_name = 'Отзыв'
-        verbose_name_plural = 'Отзывы'
-        default_related_name = 'reviews'
-
-    def __str__(self):
-        return self.author.username
-
-
-class Comments(models.Model):
-    review = models.ForeignKey(
-        Review,
-        on_delete=models.CASCADE,
-        verbose_name='Отзыв'
-    )
-    text = models.TextField(
-        verbose_name='Текст',
-        max_length=256,
-    )
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Автор',
-    )
-    pub_date = models.DateField(
-        verbose_name='Дата публикации',
-        auto_now_add=True,
-    )
-
-    class Meta:
-        verbose_name = 'Комментарий'
-        verbose_name_plural = 'Комментарии'
-        default_related_name = 'comment'
-
-    def __str__(self):
-        return self.author.username
-
-
 class Category(models.Model):
     name = models.CharField(
         verbose_name='Название',
@@ -138,3 +76,69 @@ class Title(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Review(models.Model):
+    title = models.ForeignKey(
+        Title,
+        on_delete=models.CASCADE,
+        verbose_name='Произведение'
+    )
+    text = models.TextField(
+        verbose_name='Текст',
+        max_length=256,
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Автор',
+    )
+    score = models.IntegerField(
+        verbose_name='Оценка',
+        validators=[MinValueValidator(1), MaxValueValidator(10)],
+    )
+    pub_date = models.DateField(
+        verbose_name='Дата публикации',
+        auto_now_add=True,
+    )
+
+    class Meta:
+        verbose_name = 'Отзыв'
+        verbose_name_plural = 'Отзывы'
+        default_related_name = 'reviews'
+        constraints = (models.UniqueConstraint(
+            fields=('title', 'author'),
+            name='unique_review'
+        ),)
+
+    def __str__(self):
+        return self.author.username
+
+
+class Comments(models.Model):
+    review = models.ForeignKey(
+        Review,
+        on_delete=models.CASCADE,
+        verbose_name='Отзыв'
+    )
+    text = models.TextField(
+        verbose_name='Текст',
+        max_length=256,
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Автор',
+    )
+    pub_date = models.DateField(
+        verbose_name='Дата публикации',
+        auto_now_add=True,
+    )
+
+    class Meta:
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
+        default_related_name = 'comment'
+
+    def __str__(self):
+        return self.author.username
