@@ -1,9 +1,9 @@
 # API YaMDb  
 ### Авторы
 - Кобелев Андрей Андреевич
-	- [Email](mailto:andrey.pydev@gmail.com)
-- Никитос
-	- контакты:
+	- [email](mailto:andrey.pydev@gmail.com)
+- Никита Макаренко
+	- [github](https://github.com/wArahh)
 
 
 ## Краткое описание

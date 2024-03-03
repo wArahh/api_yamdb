@@ -1,37 +1,40 @@
-from rest_framework import filters, status, viewsets
-from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
-from rest_framework_simplejwt.tokens import AccessToken
-from django_filters.rest_framework import DjangoFilterBackend
-from django.shortcuts import get_object_or_404
-
-from reviews.models import Review, Comments, Category, Genre, Title, User
 from django.db.models import Avg
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, permissions, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import AccessToken
 
-from .utils import get_confirmation_code, send_email
+from reviews.models import Category, Comments, Genre, Review, Title, User
+
 from .filters import GenreCategoryFilter
-from .mixins import RCPermissions, CDLMixin, CreateViewSet
-from .permissions import IsAdminOrReadOnly, AdminOnly, IsAuthorOrAdminOrModerator
-from .serializers import (
-    ReviewSerializer,
-    CommentSerializer,
-    CategorySerializer,
-    GenreSerializer,
-    TitleSerializer,
-    SignUpSerializer,
-    GetTokenSerializer,
-    UsersSerializer,
-    TitleGetSerializer,
-)
+from .mixins import CDLMixin, CreateViewSet
+from .permissions import (AdminOnly, IsAdminOrReadOnly,
+                          IsAuthorOrAdminOrModerator)
+from .serializers import (CategorySerializer, CommentSerializer,
+                          GenreSerializer, GetTokenSerializer,
+                          ReviewSerializer, SignUpSerializer,
+                          TitleGetSerializer, TitleSerializer, UsersSerializer)
+from .utils import get_confirmation_code, send_email
 
 
-class ReviewViewSet(RCPermissions):
+class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     pagination_class = PageNumberPagination
     http_method_names = ('get', 'post', 'patch', 'delete',)
     queryset = Review.objects.all()
+
+    def get_permissions(self):
+        if self.action in ['create']:
+            permission_classes = (permissions.IsAuthenticated,)
+        elif self.action in ['update', 'partial_update', 'destroy']:
+            permission_classes = (IsAuthorOrAdminOrModerator,)
+        else:
+            permission_classes = [permissions.AllowAny]
+        return [permission() for permission in permission_classes]
 
     def perform_create(self, serializer):
         serializer.save(
@@ -43,8 +46,8 @@ class ReviewViewSet(RCPermissions):
 
 
 class CommentViewSet(viewsets.ModelViewSet):
-    permission_classes = (IsAuthorOrAdminOrModerator,)
     serializer_class = CommentSerializer
+    permission_classes = (IsAuthorOrAdminOrModerator,)
     pagination_class = PageNumberPagination
     http_method_names = ('get', 'post', 'patch', 'delete',)
     queryset = Comments.objects.all()
@@ -78,8 +81,8 @@ class GenreViewSet(CDLMixin):
 
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(rating=Avg('reviews__score')).all()
-    pagination_class = PageNumberPagination
     permission_classes = (IsAdminOrReadOnly,)
+    pagination_class = PageNumberPagination
     http_method_names = ('get', 'post', 'patch', 'delete',)
     filter_backends = (
         DjangoFilterBackend,
@@ -129,14 +132,14 @@ class AuthViewSet(CreateViewSet):
 
 
 class UsersViewSet(viewsets.ModelViewSet):
-    serializer_class = UsersSerializer
     queryset = User.objects.all()
+    serializer_class = UsersSerializer
+    permission_classes = (IsAuthenticated, AdminOnly)
+    pagination_class = PageNumberPagination
+    http_method_names = ('get', 'post', 'patch', 'delete',)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('username',)
-    pagination_class = PageNumberPagination
-    permission_classes = (IsAuthenticated, AdminOnly)
     lookup_field = 'username'
-    http_method_names = ('get', 'post', 'patch', 'delete',)
 
     @action(
         methods=['GET', 'PATCH'],

@@ -1,7 +1,7 @@
 import random
 
-from django.core.mail import send_mail as send
 from django.conf import settings
+from django.core.mail import send_mail as send
 
 
 def get_confirmation_code():
