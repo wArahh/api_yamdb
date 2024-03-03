@@ -1,6 +1,5 @@
-from .exceptions import UserNotExistsError, EmailExistsError
-
-import datetime as dt
+import re
+from .exceptions import EmailExistsError
 
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
@@ -10,7 +9,6 @@ from django.core.exceptions import ValidationError
 
 from reviews.models import Review, Comments, Category, Genre, Title, User
 
-from .utils import get_confirmation_code, send_email
 
 INCORRECT_YEAR = ('Нельзя добавлять произведение,'
                   ' которое ещё не вышло!')
@@ -115,61 +113,45 @@ class TitleSerializer(serializers.ModelSerializer):
         return serializer.data
 
 
-class SignUpSerializer(serializers.ModelSerializer):
+class SignUpSerializer(serializers.Serializer):
     role = serializers.HiddenField(default='user')
+    username = serializers.CharField(required=True, max_length=150)
+    email = serializers.EmailField(required=True, max_length=254)
 
     class Meta:
-        model = User
         fields = ('email', 'username', 'role')
-        extra_kwargs = {
-            'email': {'required': True},
-            'username': {'required': True}
-        }
-        validators = [
-            UniqueTogetherValidator(
-                queryset=User.objects.all(),
-                fields=('email', 'username',),
-            )
-        ]
 
     def validate_username(self, username):
-        if username.lower() == 'me':
+        if not re.match(r'^[\w.@+-]+\Z', username) or username.lower() == 'me':
             raise serializers.ValidationError(
                 'Некорректное значение поля username'
             )
         return username
 
     def validate(self, data):
+        email = data['email']
+        username = data['username']
         if (
-            User.objects.filter(email=data['email']).exists()
-            and not User.objects.filter(username=data['username']).exists()
+            User.objects.filter(email=email).exists()
+            and not User.objects.filter(username=username).exists()
         ):
             raise serializers.ValidationError(
                 'Email уже существует'
             )
+        if (
+            User.objects.filter(username=username).exists()
+            and not User.objects.filter(email=email).exists()
+        ):
+            raise serializers.ValidationError(
+                'Username уже существует'
+            )
 
         return data
 
-    def create(self, validated_data):
-        confirmation_code = get_confirmation_code()
-        user = User(**validated_data)
-        user.set_confirmation_code(confirmation_code)
-        user.save()
-        send_email(to_email=validated_data['email'], code=confirmation_code)
-        return user
-
-    def update(self, instance, validated_data):
-        confirmation_code = get_confirmation_code()
-        instance.set_confirmation_code(confirmation_code)
-        send_email(to_email=instance.email, code=confirmation_code)
-        instance.save()
-        print(f'code from update: {confirmation_code}')
-        return instance
-
 
 class GetTokenSerializer(serializers.Serializer):
-    confirmation_code = serializers.CharField(required=True)
-    username = serializers.CharField(required=True)
+    confirmation_code = serializers.CharField(required=True, max_length=20)
+    username = serializers.CharField(required=True, max_length=150)
 
     class Meta:
         fields = ('confirmation_code', 'username')
@@ -177,20 +159,17 @@ class GetTokenSerializer(serializers.Serializer):
     def validate(self, data):
         username = data['username']
         confirmation_code = data['confirmation_code']
-        if not User.objects.filter(username=username).exists():
-            raise UserNotExistsError()
-        user = User.objects.get(username=username)
-
+        user = get_object_or_404(User, username=username)
         if not user.check_confirmation_code(confirmation_code):
             raise serializers.ValidationError(
                 'Неверный код подтверждения!'
             )
-
+        user.confirmation_code = None
+        user.save()
         return user
 
 
 class UsersSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = User
         fields = (
@@ -217,9 +196,9 @@ class UsersSerializer(serializers.ModelSerializer):
     def validate_role(self, role):
         user = self.context['request'].user
         if (
-            role != 'user'
-            and not user.is_admin
-            and not user.is_superuser
+                role != 'user'
+                and not user.is_admin
+                and not user.is_superuser
         ):
             raise serializers.ValidationError(
                 'Вы не можете присвоить себе статус'

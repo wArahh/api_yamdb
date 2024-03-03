@@ -10,8 +10,8 @@ from django.shortcuts import get_object_or_404
 from reviews.models import Review, Comments, Category, Genre, Title, User
 from django.db.models import Avg
 
+from .utils import get_confirmation_code, send_email
 from .filters import GenreCategoryFilter
-from .exceptions import PutMethodError
 from .mixins import RCPermissions, CDLMixin, CreateViewSet
 from .permissions import IsAdminOrReadOnly, AdminOnly, IsAuthorOrAdminOrModerator
 from .serializers import (
@@ -93,7 +93,7 @@ class TitleViewSet(viewsets.ModelViewSet):
         return TitleSerializer
 
 
-class SignUpViewSet(CreateViewSet):
+class AuthViewSet(CreateViewSet):
     @action(
         methods=['post'],
         detail=False,
@@ -101,17 +101,14 @@ class SignUpViewSet(CreateViewSet):
         permission_classes=[AllowAny,]
     )
     def signup(self, request):
-        if not User.objects.filter(**request.data).exists():
-            serializer = SignUpSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        user = User.objects.get(**request.data)
-        serializer = SignUpSerializer(
-            data=request.data, instance=user, partial=True
-        )
+        serializer = SignUpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        data = serializer.validated_data
+        current_user, _ = User.objects.get_or_create(**data)
+        confirmation_code = get_confirmation_code()
+        current_user.set_confirmation_code(confirmation_code)
+        current_user.save()
+        send_email(to_email=current_user.email, code=confirmation_code)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(
@@ -139,15 +136,7 @@ class UsersViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPagination
     permission_classes = (IsAuthenticated, AdminOnly)
     lookup_field = 'username'
-
-    def update(self, request, *args, **kwargs):
-        if request.method == 'PUT':
-            raise PutMethodError()
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    http_method_names = ('get', 'post', 'patch', 'delete',)
 
     @action(
         methods=['GET', 'PATCH'],

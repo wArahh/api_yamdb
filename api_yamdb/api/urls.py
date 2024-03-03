@@ -5,7 +5,7 @@ from .views import (
     ReviewViewSet,
     CommentViewSet,
     TitleViewSet,
-    SignUpViewSet,
+    AuthViewSet,
     UsersViewSet,
     CategoryViewSet,
     GenreViewSet
@@ -29,7 +29,7 @@ router_v1.register(
 )
 router_v1.register(
     r'auth',
-    SignUpViewSet,
+    AuthViewSet,
     basename='auth'
 )
 
