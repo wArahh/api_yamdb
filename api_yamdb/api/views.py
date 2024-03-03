@@ -101,7 +101,7 @@ class AuthViewSet(CreateViewSet):
         methods=['post'],
         detail=False,
         url_path='signup',
-        permission_classes=[AllowAny,]
+        permission_classes=(AllowAny,)
     )
     def signup(self, request):
         serializer = SignUpSerializer(data=request.data)
