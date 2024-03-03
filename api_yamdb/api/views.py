@@ -13,7 +13,7 @@ from django.db.models import Avg
 from .filters import GenreCategoryFilter
 from .exceptions import PutMethodError
 from .mixins import RCPermissions, CDLMixin, CreateViewSet
-from .permissions import IsAdminOrReadOnly, AdminOnly
+from .permissions import IsAdminOrReadOnly, AdminOnly, IsAuthorOrAdminOrModerator
 from .serializers import (
     ReviewSerializer,
     CommentSerializer,
@@ -42,7 +42,8 @@ class ReviewViewSet(RCPermissions):
         )
 
 
-class CommentViewSet(RCPermissions):
+class CommentViewSet(viewsets.ModelViewSet):
+    permission_classes = (IsAuthorOrAdminOrModerator,)
     serializer_class = CommentSerializer
     pagination_class = PageNumberPagination
     http_method_names = ('get', 'post', 'patch', 'delete',)
