@@ -7,7 +7,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = get_random_secret_key()
 
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -117,3 +117,6 @@ SIMPLE_JWT = {
 }
 
 CONFIRMATION_CODE_LENGTH = 20
+
+MIN_SCORE = 1
+MAX_SCORE = 10

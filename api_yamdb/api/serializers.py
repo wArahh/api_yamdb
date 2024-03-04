@@ -1,19 +1,17 @@
 import re
-
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from reviews.models import Category, Comments, Genre, Review, Title, User
-
 from .exceptions import EmailExistsError
 
 INCORRECT_YEAR = ('Нельзя добавлять произведение,'
                   ' которое ещё не вышло!')
-ZERO_SCORE = 'Оценка не может быть ниже нуля!'
-MORE_TEN_SCORE = 'Оценка не может быть выше десяти!'
+SCORE_VALIDATE = 'Оценка не может быть ниже нуля и выше 10'
 REPEAT_REVIEW = 'Нельзя создать два ревью на одно произведение'
 STATUS_MYSELF = 'Вы не можете присвоить себе статус'
 INCORRECT_APPROVE_CODE = 'Неверный код подтверждения!'
@@ -23,42 +21,40 @@ USERNAME_EXISTS = 'Username уже существует'
 
 
 class ReviewSerializer(serializers.ModelSerializer):
-    title = serializers.SlugRelatedField(
-        slug_field='name',
-        read_only=True
-    )
-
     author = serializers.SlugRelatedField(
         slug_field='username',
         read_only=True
     )
+    score = serializers.IntegerField(
+        validators=[MinValueValidator(1),
+                    MaxValueValidator(10)]
+    )
 
     class Meta:
-        fields = '__all__'
+        fields = (
+            'id',
+            'text',
+            'author',
+            'score',
+            'pub_date'
+        )
         model = Review
-
-    def validate_score(self, value):
-        if value < 0:
-            raise serializers.ValidationError(ZERO_SCORE)
-        if value > 10:
-            raise serializers.ValidationError(MORE_TEN_SCORE)
-        return value
 
     def validate(self, data):
         request = self.context['request']
-        title_id = self.context['view'].kwargs.get('title_id')
-        user = request.user
-        review = Review.objects.filter(title=title_id, author=user).exists()
-        if review and request.method == 'POST':
-            raise ValidationError(REPEAT_REVIEW)
+        if request.method == 'POST':
+            title_id = self.context['view'].kwargs.get('title_id')
+            user = request.user
+            review = (Review.objects.filter(
+                title=title_id,
+                author=user
+            ).exists())
+            if review:
+                raise ValidationError(REPEAT_REVIEW)
         return data
 
 
 class CommentSerializer(serializers.ModelSerializer):
-    review = serializers.SlugRelatedField(
-        slug_field='text',
-        read_only=True
-    )
     author = serializers.SlugRelatedField(
         slug_field='username',
         read_only=True
@@ -68,7 +64,6 @@ class CommentSerializer(serializers.ModelSerializer):
         model = Comments
         fields = (
             'id',
-            'review',
             'text',
             'author',
             'pub_date'
@@ -108,6 +103,7 @@ class TitleGetSerializer(serializers.ModelSerializer):
             'genre',
             'category',
         )
+        read_only_fields = fields
 
 
 class TitleSerializer(serializers.ModelSerializer):
@@ -132,8 +128,7 @@ class TitleSerializer(serializers.ModelSerializer):
         )
 
     def to_representation(self, title):
-        serializer = TitleGetSerializer(title)
-        return serializer.data
+        return TitleGetSerializer(title).data
 
 
 class SignUpSerializer(serializers.Serializer):
