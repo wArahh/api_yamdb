@@ -1,7 +1,7 @@
 from django.conf import settings
-from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.models import AbstractUser
-from django.db import models
+
+from api.validators import username_validator
 
 USER = 'user'
 ADMIN = 'admin'
@@ -15,6 +15,11 @@ CHOICES = (
 
 
 class User(AbstractUser):
+    username = models.CharField(
+        max_length=150,
+        unique=True,
+        validators=[username_validator],
+    )
     confirmation_code = models.CharField(
         verbose_name='код подтверждения',
         max_length=settings.CONFIRMATION_CODE_LENGTH,
@@ -29,22 +34,8 @@ class User(AbstractUser):
     role = models.CharField(
         verbose_name='роль',
         choices=CHOICES,
-        max_length=150
-    )
-    password = models.CharField(
-        max_length=255,
-        blank=True,
-        null=True
-    )
 
-    def set_confirmation_code(self, confirmation_code):
-        self.confirmation_code = make_password(confirmation_code)
-
-    def check_confirmation_code(self, confirmation_code):
-        return check_password(
-            confirmation_code,
-            self.confirmation_code
-        )
+    )
 
     @property
     def is_user(self):
@@ -59,7 +50,7 @@ class User(AbstractUser):
         return self.role == MODERATOR
 
     class Meta:
-        ordering = ('id',)
+        ordering = ('date_joined',)
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 

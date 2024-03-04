@@ -14,7 +14,3 @@ class CategoryGenreMixin(
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
-
-
-class CreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
-    pass

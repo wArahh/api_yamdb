@@ -1,7 +1,7 @@
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, status, viewsets
+from rest_framework import filters, status, viewsets, mixins
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -10,7 +10,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 
 from reviews.models import Category, Comments, Genre, Review, Title, User
 from .filters import GenreCategoryFilter
-from .mixins import CreateViewSet, CategoryGenreMixin
+from .mixins import CategoryGenreMixin
 from .permissions import (AdminOnly, IsAdminOrReadOnly,
                           IsAuthorOrAdminOrModerator)
 from .serializers import (CategorySerializer, CommentSerializer,
@@ -93,6 +93,10 @@ class TitleViewSet(viewsets.ModelViewSet):
         return TitleSerializer
 
 
+class CreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    pass
+
+
 class AuthViewSet(CreateViewSet):
     @action(
         methods=['post'],
@@ -101,13 +105,12 @@ class AuthViewSet(CreateViewSet):
         permission_classes=(AllowAny,)
     )
     def signup(self, request):
+        confirmation_code = get_confirmation_code()
         serializer = SignUpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        data['confirmation_code'] = confirmation_code
         current_user, _ = User.objects.get_or_create(**data)
-        confirmation_code = get_confirmation_code()
-        current_user.set_confirmation_code(confirmation_code)
-        current_user.save()
         send_email(to_email=current_user.email, code=confirmation_code)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
