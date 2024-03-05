@@ -1,11 +1,73 @@
 from datetime import datetime
-from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.conf import settings
+from django.contrib.auth.models import AbstractUser
 
-from api_yamdb.settings import MIN_SCORE, MAX_SCORE
+from api.validators import username_validator
 
-User = get_user_model()
+USER = 'user'
+ADMIN = 'admin'
+MODERATOR = 'moderator'
+
+CHOICES = (
+    (USER, 'пользователь'),
+    (MODERATOR, 'модератор'),
+    (ADMIN, 'администратор'),
+)
+
+
+class User(AbstractUser):
+    username = models.CharField(
+        verbose_name='Имя пользователя',
+        max_length=settings.USERNAME_MAX_LENGTH,
+        unique=True,
+        blank=False,
+        validators=[username_validator,],
+    )
+    confirmation_code = models.CharField(
+        verbose_name='Код подтверждения',
+        max_length=settings.CONFIRMATION_CODE_LENGTH,
+        blank=True,
+        null=True
+    )
+    email = models.EmailField(
+        verbose_name='Электронная почта',
+        blank=False,
+        unique=True
+    )
+    bio = models.TextField(
+        verbose_name='Биография',
+        blank=True,
+        null=True
+    )
+    role = models.CharField(
+        verbose_name='Роль',
+        choices=CHOICES,
+        max_length=settings.ROLE_MAX_LENGTH,
+        default=USER
+
+    )
+
+    @property
+    def is_user(self):
+        return self.role == USER
+
+    @property
+    def is_admin(self):
+        return self.role == ADMIN or self.is_superuser
+
+    @property
+    def is_moderator(self):
+        return self.role == MODERATOR
+
+    class Meta:
+        ordering = ('username',)
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
+
+    def __str__(self):
+        return self.username
 
 
 def current_year():
@@ -106,8 +168,8 @@ class Review(AuthoredText):
     )
     score = models.IntegerField(
         verbose_name='Оценка',
-        validators=[MinValueValidator(MIN_SCORE),
-                    MaxValueValidator(MAX_SCORE)],
+        validators=[MinValueValidator(settings.MIN_SCORE),
+                    MaxValueValidator(settings.MAX_SCORE)],
     )
 
     class Meta(AuthoredText.Meta):

@@ -18,6 +18,11 @@ from .serializers import (CategorySerializer, CommentSerializer,
                           ReviewSerializer, SignUpSerializer,
                           TitleGetSerializer, TitleSerializer, UsersSerializer)
 from .utils import get_confirmation_code, send_email
+from .validators import (
+    code_validator,
+    username_exists_and_free_email_validator,
+    email_exists_and_free_username_validator
+)
 
 
 class CategoryGenre(
@@ -106,6 +111,10 @@ class TitleViewSet(viewsets.ModelViewSet):
         return TitleSerializer
 
 
+class CreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    pass
+
+
 class AuthViewSet(CreateViewSet):
     @action(
         methods=['post'],
@@ -114,12 +123,20 @@ class AuthViewSet(CreateViewSet):
         permission_classes=(AllowAny,)
     )
     def signup(self, request):
+        confirmation_code = get_confirmation_code()
         serializer = SignUpSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
+        username = data['username']
+        email = data['email']
+        username_exists_and_free_email_validator(
+            username=username, email=email, user_model=User
+        )
+        email_exists_and_free_username_validator(
+            username=username, email=email, user_model=User
+        )
         current_user, _ = User.objects.get_or_create(**data)
-        confirmation_code = get_confirmation_code()
-        current_user.set_confirmation_code(confirmation_code)
+        current_user.confirmation_code = confirmation_code
         current_user.save()
         send_email(to_email=current_user.email, code=confirmation_code)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -133,7 +150,9 @@ class AuthViewSet(CreateViewSet):
     def token(self, request):
         serializer = GetTokenSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data
+        data = serializer.validated_data
+        user = get_object_or_404(User, username=data['username'])
+        code_validator(user.confirmation_code, data['confirmation_code'])
         access_token = AccessToken.for_user(user)
         return Response(
             {'token': str(access_token)},
@@ -144,7 +163,7 @@ class AuthViewSet(CreateViewSet):
 class UsersViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UsersSerializer
-    permission_classes = (IsAuthenticated, AdminOnly)
+    permission_classes = (AdminOnly,)
     pagination_class = PageNumberPagination
     http_method_names = ('get', 'post', 'patch', 'delete',)
     filter_backends = (filters.SearchFilter,)
@@ -158,7 +177,6 @@ class UsersViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,)
     )
     def get_current_user_info(self, request):
-        serializer = UsersSerializer(request.user)
         if request.method == 'PATCH':
             serializer = UsersSerializer(
                 request.user,
@@ -169,5 +187,5 @@ class UsersViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-
+        serializer = UsersSerializer(request.user)
         return Response(serializer.data)
