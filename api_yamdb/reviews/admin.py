@@ -1,6 +1,21 @@
 from django.contrib import admin
 
-from .models import Category, Comments, Genre, Review, Title
+from .models import Category, Comments, Genre, Review, Title, User
+
+
+@admin.register(User)
+class UserAdmin(admin.ModelAdmin):
+    list_display = (
+        'username',
+        'email',
+        'role',
+        'bio',
+        'first_name',
+        'last_name',
+        'confirmation_code',
+    )
+    search_fields = ('username', 'role',)
+    empty_value_display = '-пусто-'
 
 
 @admin.register(Category)
