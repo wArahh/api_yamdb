@@ -5,10 +5,12 @@ from django.core.mail import send_mail as send
 
 
 def get_confirmation_code():
-    code = ''
-    for _ in range(settings.CONFIRMATION_CODE_LENGTH):
-        code += str(random.randint(0, 9))
-    return code
+    return ''.join(
+        random.choices(
+            settings.CONFIRMATION_CODE_CHARACTERS,
+            k=settings.CONFIRMATION_CODE_LENGTH
+        )
+    )
 
 
 def send_email(to_email, code):

@@ -19,24 +19,33 @@ CHOICES = (
 
 class User(AbstractUser):
     username = models.CharField(
+        verbose_name='Имя пользователя',
         max_length=settings.USERNAME_MAX_LENGTH,
         unique=True,
-        validators=[username_validator],
+        blank=False,
+        validators=[username_validator,],
     )
     confirmation_code = models.CharField(
-        verbose_name='код подтверждения',
+        verbose_name='Код подтверждения',
         max_length=settings.CONFIRMATION_CODE_LENGTH,
         blank=True,
         null=True
     )
+    email = models.EmailField(
+        verbose_name='Электронная почта',
+        blank=False,
+        unique=True
+    )
     bio = models.TextField(
-        verbose_name='биография',
+        verbose_name='Биография',
         blank=True,
         null=True
     )
     role = models.CharField(
-        verbose_name='роль',
+        verbose_name='Роль',
         choices=CHOICES,
+        max_length=settings.ROLE_MAX_LENGTH,
+        default=USER
 
     )
 
@@ -53,7 +62,7 @@ class User(AbstractUser):
         return self.role == MODERATOR
 
     class Meta:
-        ordering = ('date_joined',)
+        ordering = ('username',)
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 

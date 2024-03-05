@@ -12,9 +12,8 @@ INCORRECT_YEAR = ('Нельзя добавлять произведение,'
 SCORE_VALIDATE = 'Оценка не может быть ниже нуля и выше 10'
 REPEAT_REVIEW = 'Нельзя создать два ревью на одно произведение'
 STATUS_MYSELF = 'Вы не можете присвоить себе статус'
-INCORRECT_APPROVE_CODE = 'Неверный код подтверждения!'
 EMAIL_EXISTS = 'Email уже существует'
-USERNAME_EXISTS = 'Username уже существует'
+USERNAME_NOT_EXIST = 'Пользователь {name} не найден'
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -130,7 +129,8 @@ class TitleSerializer(serializers.ModelSerializer):
 
 class SignUpSerializer(serializers.Serializer):
     username = serializers.CharField(
-        required=True, max_length=settings.USERNAME_MAX_LENGTH, validators=[username_validator]
+        required=True, max_length=settings.USERNAME_MAX_LENGTH,
+        validators=[username_validator]
     )
     email = serializers.EmailField(
         required=True, max_length=settings.EMAIL_MAX_LENGTH
@@ -142,33 +142,14 @@ class SignUpSerializer(serializers.Serializer):
             'username',
         )
 
-    def validate(self, data):
-        email = data['email']
-        username = data['username']
-        if (
-            User.objects.filter(email=email).exists()
-            and not User.objects.filter(username=username).exists()
-        ):
-            raise serializers.ValidationError(
-                EMAIL_EXISTS
-            )
-        if (
-            User.objects.filter(username=username).exists()
-            and not User.objects.filter(email=email).exists()
-        ):
-            raise serializers.ValidationError(
-                USERNAME_EXISTS
-            )
-
-        return data
-
 
 class GetTokenSerializer(serializers.Serializer):
     confirmation_code = serializers.CharField(
         required=True, max_length=settings.CONFIRMATION_CODE_LENGTH
     )
     username = serializers.CharField(
-        required=True, max_length=settings.USERNAME_MAX_LENGTH, validators=[username_validator]
+        required=True, max_length=settings.USERNAME_MAX_LENGTH,
+        validators=[username_validator,]
     )
 
     class Meta:
@@ -177,20 +158,19 @@ class GetTokenSerializer(serializers.Serializer):
             'username',
         )
 
-    def validate(self, data):
-        username = data['username']
-        confirmation_code = data['confirmation_code']
-        user = get_object_or_404(User, username=username)
-        if user.confirmation_code != confirmation_code:
-            raise serializers.ValidationError(
-                INCORRECT_APPROVE_CODE
-            )
-        user.confirmation_code = None
-        user.save()
-        return user
+    def validate_username(self, username):
+        get_object_or_404(User, username=username)
+        return username
 
 
 class UsersSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = '__all__'
+        fields = (
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'bio',
+            'role'
+        )

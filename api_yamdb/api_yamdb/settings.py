@@ -20,7 +20,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
-    'users',
     'reviews',
     'api',
 ]
@@ -95,7 +94,7 @@ STATIC_URL = '/static/'
 
 STATICFILES_DIRS = ((BASE_DIR / 'static/'),)
 
-AUTH_USER_MODEL = 'users.User'
+AUTH_USER_MODEL = 'reviews.User'
 
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
 
@@ -117,13 +116,16 @@ SIMPLE_JWT = {
 }
 
 CONFIRMATION_CODE_LENGTH = 20
+CONFIRMATION_CODE_CHARACTERS = '1234567890'
 
 MIN_SCORE = 1
 MAX_SCORE = 10
 
 EMAIL_MAX_LENGTH = 254
 USERNAME_MAX_LENGTH = 150
+ROLE_MAX_LENGTH = 20
 
-YAMDB_EMAIL = 'from@example.com'
+
+YAMDB_EMAIL = 'yamdb@example.com'
 
 INVALID_USERNAME_CHARACTERS = ['me',]
