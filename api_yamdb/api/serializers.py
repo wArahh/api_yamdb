@@ -148,7 +148,7 @@ class GetTokenSerializer(serializers.Serializer):
     )
     username = serializers.CharField(
         required=True, max_length=settings.USERNAME_MAX_LENGTH,
-        validators=[username_validator,]
+        validators=(username_validator,)
     )
 
     class Meta:

@@ -23,7 +23,7 @@ class User(AbstractUser):
         max_length=settings.USERNAME_MAX_LENGTH,
         unique=True,
         blank=False,
-        validators=[username_validator,],
+        validators=(username_validator,),
     )
     confirmation_code = models.CharField(
         verbose_name='Код подтверждения',
