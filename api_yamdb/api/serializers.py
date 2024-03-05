@@ -12,8 +12,6 @@ INCORRECT_YEAR = ('Нельзя добавлять произведение,'
 SCORE_VALIDATE = 'Оценка не может быть ниже нуля и выше 10'
 REPEAT_REVIEW = 'Нельзя создать два ревью на одно произведение'
 STATUS_MYSELF = 'Вы не можете присвоить себе статус'
-EMAIL_EXISTS = 'Email уже существует'
-USERNAME_NOT_EXIST = 'Пользователь {name} не найден'
 
 
 class ReviewSerializer(serializers.ModelSerializer):
@@ -174,3 +172,10 @@ class UsersSerializer(serializers.ModelSerializer):
             'bio',
             'role'
         )
+
+    def validate_role(self, role):
+        if not self.context['request'].user.is_admin:
+            raise serializers.ValidationError(
+                STATUS_MYSELF
+            )
+        return role
