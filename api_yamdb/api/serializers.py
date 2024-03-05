@@ -1,4 +1,5 @@
 import re
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -8,6 +9,7 @@ from rest_framework.validators import UniqueTogetherValidator
 
 from reviews.models import Category, Comments, Genre, Review, Title, User
 from .exceptions import EmailExistsError
+from api_yamdb.settings import MIN_SCORE, MAX_SCORE
 
 INCORRECT_YEAR = ('Нельзя добавлять произведение,'
                   ' которое ещё не вышло!')
@@ -26,8 +28,8 @@ class ReviewSerializer(serializers.ModelSerializer):
         read_only=True
     )
     score = serializers.IntegerField(
-        validators=[MinValueValidator(1),
-                    MaxValueValidator(10)]
+        validators=[MinValueValidator(MIN_SCORE),
+                    MaxValueValidator(MAX_SCORE)]
     )
 
     class Meta:

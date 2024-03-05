@@ -8,7 +8,11 @@ from api_yamdb.settings import MIN_SCORE, MAX_SCORE
 User = get_user_model()
 
 
-class CategoryGenre(models.Model):
+def current_year():
+    return datetime.now().year
+
+
+class NamedSlug(models.Model):
     name = models.CharField(
         verbose_name='Название',
         max_length=150,
@@ -27,15 +31,15 @@ class CategoryGenre(models.Model):
         return self.name
 
 
-class ReviewComment(models.Model):
+class AuthoredText(models.Model):
     text = models.TextField(
         verbose_name='Текст',
-        max_length=256,
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         verbose_name='Автор',
+        related_name='textauthor'
     )
     pub_date = models.DateField(
         verbose_name='Дата публикации',
@@ -47,14 +51,14 @@ class ReviewComment(models.Model):
         ordering = ('pub_date',)
 
 
-class Category(CategoryGenre):
-    class Meta(CategoryGenre.Meta):
+class Category(NamedSlug):
+    class Meta(NamedSlug.Meta):
         verbose_name = 'Категория'
         verbose_name_plural = 'Категории'
 
 
-class Genre(CategoryGenre):
-    class Meta(CategoryGenre.Meta):
+class Genre(NamedSlug):
+    class Meta(NamedSlug.Meta):
         verbose_name = 'Жанр'
         verbose_name_plural = 'Жанры'
 
@@ -66,7 +70,7 @@ class Title(models.Model):
     )
     year = models.IntegerField(
         verbose_name='Год',
-        validators=[MaxValueValidator(datetime.now().year)]
+        validators=[MaxValueValidator(current_year())]
     )
     description = models.TextField(
         verbose_name='Описание',
@@ -95,7 +99,7 @@ class Title(models.Model):
         return self.name[:15]
 
 
-class Review(ReviewComment):
+class Review(AuthoredText):
     title = models.ForeignKey(
         Title,
         on_delete=models.CASCADE,
@@ -107,7 +111,7 @@ class Review(ReviewComment):
                     MaxValueValidator(MAX_SCORE)],
     )
 
-    class Meta(ReviewComment.Meta):
+    class Meta(AuthoredText.Meta):
         verbose_name = 'Отзыв'
         verbose_name_plural = 'Отзывы'
         default_related_name = 'reviews'
@@ -120,16 +124,17 @@ class Review(ReviewComment):
         return self.title
 
 
-class Comments(ReviewComment):
+class Comments(AuthoredText):
     review = models.ForeignKey(
         Review,
         on_delete=models.CASCADE,
-        verbose_name='Отзыв'
+        verbose_name='Отзыв',
+        related_name='review'
     )
 
-    class Meta(ReviewComment.Meta):
+    class Meta(AuthoredText.Meta):
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
 
     def __str__(self):
-        return self.review
+        return self.name[:15]
