@@ -2,7 +2,8 @@ import re
 
 from django.conf import settings
 from django.core.exceptions import ValidationError as UsernameError
-from rest_framework.serializers import ValidationError as SerializerValidationError
+from rest_framework.serializers import (ValidationError
+                                        as SerializerValidationError)
 
 INCORRECT_USERNAME = 'Имя {name} - недопустимо. Введите другое имя'
 BAD_USERNAME = 'Неверный формат имени'

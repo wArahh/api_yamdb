@@ -1,6 +1,3 @@
-import re
-
-from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.shortcuts import get_object_or_404
@@ -9,7 +6,6 @@ from django.conf import settings
 
 from reviews.models import Category, Comments, Genre, Review, Title, User
 from .validators import username_validator
-from .exceptions import EmailExistsError
 
 
 INCORRECT_YEAR = ('Нельзя добавлять произведение,'
