@@ -10,7 +10,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 
 from reviews.models import Category, Comments, Genre, Review, Title, User
 from .filters import GenreCategoryFilter
-from .mixins import CategoryGenreMixin
+from .mixins import CreateViewSet
 from .permissions import (AdminOnly, IsAdminOrReadOnly,
                           IsAuthorOrAdminOrModerator)
 from .serializers import (CategorySerializer, CommentSerializer,
@@ -23,6 +23,19 @@ from .validators import (
     username_exists_and_free_email_validator,
     email_exists_and_free_username_validator
 )
+
+
+class CategoryGenre(
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
+    permission_classes = (IsAdminOrReadOnly,)
+    pagination_class = PageNumberPagination
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
+    lookup_field = 'slug'
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
@@ -70,12 +83,12 @@ class CommentViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user, review=review)
 
 
-class CategoryViewSet(CategoryGenreMixin):
+class CategoryViewSet(CategoryGenre):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
 
 
-class GenreViewSet(CategoryGenreMixin):
+class GenreViewSet(CategoryGenre):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
 
