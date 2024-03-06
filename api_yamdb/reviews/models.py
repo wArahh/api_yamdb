@@ -129,7 +129,7 @@ class Title(models.Model):
     )
     year = models.IntegerField(
         verbose_name='Год',
-        validators=[MaxValueValidator(current_year()),]
+        validators=(MaxValueValidator(current_year()),)
     )
     description = models.TextField(
         verbose_name='Описание',
