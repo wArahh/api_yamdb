@@ -2,26 +2,41 @@ from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, status, viewsets, mixins
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.serializers import ValidationError
 from rest_framework_simplejwt.tokens import AccessToken
 
 from reviews.models import Category, Comments, Genre, Review, Title, User
 from .filters import GenreCategoryFilter
-from .mixins import CreateViewSet
-from .permissions import (AdminOnly, IsAdminOrReadOnly,
-                          IsAuthorOrAdminOrModerator)
-from .serializers import (CategorySerializer, CommentSerializer,
-                          GenreSerializer, GetTokenSerializer,
-                          ReviewSerializer, SignUpSerializer,
-                          TitleGetSerializer, TitleSerializer, UsersSerializer)
+from .permissions import (
+    AdminOnly,
+    IsAdminOrReadOnly,
+    IsAuthorOrAdminOrModerator
+)
+from .serializers import (
+    CategorySerializer,
+    CommentSerializer,
+    GenreSerializer,
+    GetTokenSerializer,
+    ReviewSerializer,
+    SignUpSerializer,
+    TitleGetSerializer,
+    TitleSerializer,
+    UsersSerializer,
+    UsersForUserSerializer
+)
 from .utils import get_confirmation_code, send_email
 from .validators import (
-    code_validator,
-    username_exists_and_free_email_validator,
-    email_exists_and_free_username_validator
+    email_or_username_exists_or_free_validator
+)
+
+
+INVALID_CONFIRMATION_CODE = (
+    'Неверный код подтверждения!'
+    'Пройдите процедуру получения кода заново.'
 )
 
 
@@ -44,21 +59,21 @@ class ReviewViewSet(viewsets.ModelViewSet):
     http_method_names = ('get', 'post', 'patch', 'delete',)
     permission_classes = (IsAuthorOrAdminOrModerator,)
 
+    def get_title(self):
+        return get_object_or_404(
+            Title,
+            id=self.kwargs.get('title_id')
+        )
+
     def get_queryset(self):
         return Review.objects.filter(
-            title=get_object_or_404(
-                Title,
-                id=self.kwargs.get('title_id')
-            )
+            title=self.get_title()
         )
 
     def perform_create(self, serializer):
         serializer.save(
             author=self.request.user,
-            title=get_object_or_404(
-                Title,
-                id=self.kwargs.get('title_id')
-            )
+            title=self.get_title()
         )
 
 
@@ -68,19 +83,18 @@ class CommentViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPagination
     http_method_names = ('get', 'post', 'patch', 'delete',)
 
-    def get_queryset(self):
-        return Comments.objects.filter(
-            review=get_object_or_404(
-                Review,
-                id=self.kwargs.get('review_id')
-            )
+    def get_review(self):
+        return get_object_or_404(
+            Review,
+            id=self.kwargs.get('review_id')
         )
 
+    def get_queryset(self):
+        return Comments.objects.filter(review=self.get_review())
+
     def perform_create(self, serializer):
-        review = get_object_or_404(
-            Review,
-            id=self.kwargs.get('review_id'))
-        serializer.save(author=self.request.user, review=review)
+        serializer.save(author=self.request.user,
+                        review=self.get_review())
 
 
 class CategoryViewSet(CategoryGenre):
@@ -94,7 +108,9 @@ class GenreViewSet(CategoryGenre):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.annotate(rating=Avg('reviews__score')).all()
+    queryset = Title.objects.annotate(
+        rating=Avg('reviews__score')
+    ).order_by('name').all()
     permission_classes = (IsAdminOrReadOnly,)
     pagination_class = PageNumberPagination
     http_method_names = ('get', 'post', 'patch', 'delete',)
@@ -111,53 +127,45 @@ class TitleViewSet(viewsets.ModelViewSet):
         return TitleSerializer
 
 
-class CreateViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
-    pass
-
-
-class AuthViewSet(CreateViewSet):
-    @action(
-        methods=['post'],
-        detail=False,
-        url_path='signup',
-        permission_classes=(AllowAny,)
+@api_view(http_method_names=['POST'])
+@permission_classes(permission_classes=[AllowAny])
+def signup(request):
+    confirmation_code = get_confirmation_code()
+    serializer = SignUpSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
+    username = data['username']
+    email = data['email']
+    email_or_username_exists_or_free_validator(
+        username=username, email=email, user_model=User
     )
-    def signup(self, request):
-        confirmation_code = get_confirmation_code()
-        serializer = SignUpSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-        username = data['username']
-        email = data['email']
-        username_exists_and_free_email_validator(
-            username=username, email=email, user_model=User
-        )
-        email_exists_and_free_username_validator(
-            username=username, email=email, user_model=User
-        )
-        current_user, _ = User.objects.get_or_create(**data)
-        current_user.confirmation_code = confirmation_code
-        current_user.save()
-        send_email(to_email=current_user.email, code=confirmation_code)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    user, _ = User.objects.get_or_create(**data)
+    user.confirmation_code = confirmation_code
+    user.save()
+    send_email(to_email=user.email, code=confirmation_code)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(
-        methods=['post'],
-        detail=False,
-        url_path='token',
-        permission_classes=[AllowAny]
-    )
-    def token(self, request):
-        serializer = GetTokenSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        data = serializer.validated_data
-        user = get_object_or_404(User, username=data['username'])
-        code_validator(user.confirmation_code, data['confirmation_code'])
-        access_token = AccessToken.for_user(user)
-        return Response(
-            {'token': str(access_token)},
-            status=status.HTTP_200_OK
+
+@api_view(http_method_names=['POST'])
+@permission_classes(permission_classes=[AllowAny])
+def token(request):
+    serializer = GetTokenSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    data = serializer.validated_data
+    user = get_object_or_404(User, username=data['username'])
+    if user.confirmation_code != data['confirmation_code']:
+        user.confirmation_code = None
+        user.save()
+        raise ValidationError(
+            INVALID_CONFIRMATION_CODE
         )
+    access_token = AccessToken.for_user(user)
+    user.confirmation_code = None
+    user.save()
+    return Response(
+        {'token': str(access_token)},
+        status=status.HTTP_200_OK
+    )
 
 
 class UsersViewSet(viewsets.ModelViewSet):
@@ -178,7 +186,7 @@ class UsersViewSet(viewsets.ModelViewSet):
     )
     def get_current_user_info(self, request):
         if request.method == 'PATCH':
-            serializer = UsersSerializer(
+            serializer = UsersForUserSerializer(
                 request.user,
                 data=request.data,
                 partial=True,
@@ -187,5 +195,4 @@ class UsersViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        serializer = UsersSerializer(request.user)
-        return Response(serializer.data)
+        return Response(UsersForUserSerializer(request.user).data)

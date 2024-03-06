@@ -1,10 +1,10 @@
-from datetime import datetime
+from django.utils import timezone
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 
-from api.validators import username_validator
+from .validators import username_validator
 
 USER = 'user'
 ADMIN = 'admin'
@@ -15,15 +15,19 @@ CHOICES = (
     (MODERATOR, 'модератор'),
     (ADMIN, 'администратор'),
 )
+CHOICES_MAX_LENGTH = max(
+    len(choice)
+    for value in CHOICES
+    for choice in value
+)
 
 
 class User(AbstractUser):
     username = models.CharField(
         verbose_name='Имя пользователя',
         max_length=settings.USERNAME_MAX_LENGTH,
-        unique=True,
-        blank=False,
         validators=(username_validator,),
+        unique=True
     )
     confirmation_code = models.CharField(
         verbose_name='Код подтверждения',
@@ -33,7 +37,6 @@ class User(AbstractUser):
     )
     email = models.EmailField(
         verbose_name='Электронная почта',
-        blank=False,
         unique=True
     )
     bio = models.TextField(
@@ -44,7 +47,7 @@ class User(AbstractUser):
     role = models.CharField(
         verbose_name='Роль',
         choices=CHOICES,
-        max_length=settings.ROLE_MAX_LENGTH,
+        max_length=CHOICES_MAX_LENGTH,
         default=USER
 
     )
@@ -55,7 +58,7 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.role == ADMIN or self.is_superuser
+        return self.role == ADMIN or (self.is_superuser or self.is_staff)
 
     @property
     def is_moderator(self):
@@ -68,10 +71,6 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
-
-
-def current_year():
-    return datetime.now().year
 
 
 class NamedSlug(models.Model):
@@ -87,7 +86,7 @@ class NamedSlug(models.Model):
 
     class Meta:
         abstract = True
-        ordering = ('slug',)
+        ordering = ('name',)
 
     def __str__(self):
         return self.name
@@ -96,11 +95,6 @@ class NamedSlug(models.Model):
 class AuthoredText(models.Model):
     text = models.TextField(
         verbose_name='Текст',
-    )
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Автор',
     )
     pub_date = models.DateField(
         verbose_name='Дата публикации',
@@ -124,6 +118,10 @@ class Genre(NamedSlug):
         verbose_name_plural = 'Жанры'
 
 
+def current_year():
+    return timezone.now().year
+
+
 class Title(models.Model):
     name = models.CharField(
         verbose_name='Название',
@@ -131,7 +129,7 @@ class Title(models.Model):
     )
     year = models.IntegerField(
         verbose_name='Год',
-        validators=[MaxValueValidator(current_year())]
+        validators=[MaxValueValidator(current_year()),]
     )
     description = models.TextField(
         verbose_name='Описание',
@@ -171,6 +169,11 @@ class Review(AuthoredText):
         validators=[MinValueValidator(settings.MIN_SCORE),
                     MaxValueValidator(settings.MAX_SCORE)],
     )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Автор',
+    )
 
     class Meta(AuthoredText.Meta):
         verbose_name = 'Отзыв'
@@ -190,12 +193,17 @@ class Comments(AuthoredText):
         Review,
         on_delete=models.CASCADE,
         verbose_name='Отзыв',
-        related_name='review'
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Автор',
     )
 
     class Meta(AuthoredText.Meta):
         verbose_name = 'Комментарий'
         verbose_name_plural = 'Комментарии'
+        default_related_name = 'comments'
 
     def __str__(self):
         return self.name[:15]
