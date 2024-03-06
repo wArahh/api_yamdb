@@ -135,12 +135,6 @@ class SignUpSerializer(serializers.Serializer):
         required=True, max_length=settings.EMAIL_MAX_LENGTH
     )
 
-    class Meta:
-        fields = (
-            'email',
-            'username',
-        )
-
 
 class GetTokenSerializer(serializers.Serializer):
     confirmation_code = serializers.CharField(
@@ -150,16 +144,6 @@ class GetTokenSerializer(serializers.Serializer):
         required=True, max_length=settings.USERNAME_MAX_LENGTH,
         validators=(username_validator,)
     )
-
-    class Meta:
-        fields = (
-            'confirmation_code',
-            'username',
-        )
-
-    def validate_username(self, username):
-        get_object_or_404(User, username=username)
-        return username
 
 
 class UsersSerializer(serializers.ModelSerializer):
@@ -173,10 +157,14 @@ class UsersSerializer(serializers.ModelSerializer):
             'bio',
             'role'
         )
+        extra_kwargs = {
+            'username': {'validators': (username_validator,)},
+        }
 
-    def validate_role(self, role):
-        if not self.context['request'].user.is_admin:
-            raise serializers.ValidationError(
-                STATUS_MYSELF
-            )
-        return role
+
+class UsersForUserSerializer(UsersSerializer):
+    class Meta:
+        fields = UsersSerializer.Meta.fields
+        extra_kwargs = UsersSerializer.Meta.extra_kwargs[
+            'role'
+        ] = {'read_only': True}
