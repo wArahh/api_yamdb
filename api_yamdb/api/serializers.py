@@ -4,7 +4,7 @@ from rest_framework import serializers
 from django.conf import settings
 
 from reviews.models import Category, Comments, Genre, Review, Title, User
-from .validators import username_validator
+from reviews.validators import username_validator
 
 
 INCORRECT_YEAR = ('Нельзя добавлять произведение,'
@@ -156,14 +156,10 @@ class UsersSerializer(serializers.ModelSerializer):
             'bio',
             'role'
         )
-        extra_kwargs = {
-            'username': {'validators': (username_validator,)},
-        }
 
 
 class UsersForUserSerializer(UsersSerializer):
     class Meta:
+        model = User
         fields = UsersSerializer.Meta.fields
-        extra_kwargs = UsersSerializer.Meta.extra_kwargs[
-            'role'
-        ] = {'read_only': True}
+        read_only_fields = ('role',)

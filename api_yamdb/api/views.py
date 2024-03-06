@@ -6,6 +6,7 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.serializers import ValidationError
 from rest_framework_simplejwt.tokens import AccessToken
 
 from reviews.models import Category, Comments, Genre, Review, Title, User
@@ -29,9 +30,13 @@ from .serializers import (
 )
 from .utils import get_confirmation_code, send_email
 from .validators import (
-    code_validator,
-    username_exists_and_free_email_validator,
-    email_exists_and_free_username_validator
+    email_or_username_exists_or_free_validator
+)
+
+
+INVALID_CONFIRMATION_CODE = (
+    'Неверный код подтверждения!'
+    'Пройдите процедуру получения кода заново.'
 )
 
 
@@ -130,16 +135,13 @@ def signup(request):
     data = serializer.validated_data
     username = data['username']
     email = data['email']
-    username_exists_and_free_email_validator(
+    email_or_username_exists_or_free_validator(
         username=username, email=email, user_model=User
     )
-    email_exists_and_free_username_validator(
-        username=username, email=email, user_model=User
-    )
-    current_user, _ = User.objects.get_or_create(**data)
-    current_user.confirmation_code = confirmation_code
-    current_user.save()
-    send_email(to_email=current_user.email, code=confirmation_code)
+    user, _ = User.objects.get_or_create(**data)
+    user.confirmation_code = confirmation_code
+    user.save()
+    send_email(to_email=user.email, code=confirmation_code)
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -150,8 +152,15 @@ def token(request):
     serializer.is_valid(raise_exception=True)
     data = serializer.validated_data
     user = get_object_or_404(User, username=data['username'])
-    code_validator(user.confirmation_code, data['confirmation_code'])
+    if user.confirmation_code != data['confirmation_code']:
+        user.confirmation_code = None
+        user.save()
+        raise ValidationError(
+            INVALID_CONFIRMATION_CODE
+        )
     access_token = AccessToken.for_user(user)
+    user.confirmation_code = None
+    user.save()
     return Response(
         {'token': str(access_token)},
         status=status.HTTP_200_OK
@@ -185,5 +194,4 @@ class UsersViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        serializer = UsersForUserSerializer(request.user)
-        return Response(serializer.data)
+        return Response(UsersForUserSerializer(request.user).data)
