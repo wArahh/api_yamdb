@@ -1,6 +1,5 @@
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator
-from django.shortcuts import get_object_or_404
 from rest_framework import serializers
 from django.conf import settings
 
