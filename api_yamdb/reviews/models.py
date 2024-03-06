@@ -4,7 +4,7 @@ from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 
-from api.validators import username_validator
+from .validators import username_validator
 
 USER = 'user'
 ADMIN = 'admin'
@@ -15,15 +15,19 @@ CHOICES = (
     (MODERATOR, 'модератор'),
     (ADMIN, 'администратор'),
 )
+CHOICES_MAX_LENGTH = max(
+    len(choice)
+    for value in CHOICES
+    for choice in value
+)
 
 
 class User(AbstractUser):
     username = models.CharField(
         verbose_name='Имя пользователя',
         max_length=settings.USERNAME_MAX_LENGTH,
-        unique=True,
-        blank=False,
         validators=(username_validator,),
+        unique=True
     )
     confirmation_code = models.CharField(
         verbose_name='Код подтверждения',
@@ -33,7 +37,6 @@ class User(AbstractUser):
     )
     email = models.EmailField(
         verbose_name='Электронная почта',
-        blank=False,
         unique=True
     )
     bio = models.TextField(
@@ -44,7 +47,7 @@ class User(AbstractUser):
     role = models.CharField(
         verbose_name='Роль',
         choices=CHOICES,
-        max_length=settings.ROLE_MAX_LENGTH,
+        max_length=CHOICES_MAX_LENGTH,
         default=USER
 
     )
@@ -55,7 +58,7 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.role == ADMIN or self.is_superuser
+        return self.role == ADMIN or (self.is_superuser or self.is_staff)
 
     @property
     def is_moderator(self):
