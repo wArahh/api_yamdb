@@ -44,21 +44,21 @@ class ReviewViewSet(viewsets.ModelViewSet):
     http_method_names = ('get', 'post', 'patch', 'delete',)
     permission_classes = (IsAuthorOrAdminOrModerator,)
 
+    def get_title(self):
+        return get_object_or_404(
+            Title,
+            id=self.kwargs.get('title_id')
+        )
+
     def get_queryset(self):
         return Review.objects.filter(
-            title=get_object_or_404(
-                Title,
-                id=self.kwargs.get('title_id')
-            )
+            title=self.get_title()
         )
 
     def perform_create(self, serializer):
         serializer.save(
             author=self.request.user,
-            title=get_object_or_404(
-                Title,
-                id=self.kwargs.get('title_id')
-            )
+            title=self.get_title()
         )
 
 
@@ -68,19 +68,18 @@ class CommentViewSet(viewsets.ModelViewSet):
     pagination_class = PageNumberPagination
     http_method_names = ('get', 'post', 'patch', 'delete',)
 
-    def get_queryset(self):
-        return Comments.objects.filter(
-            review=get_object_or_404(
-                Review,
-                id=self.kwargs.get('review_id')
-            )
+    def get_review(self):
+        return get_object_or_404(
+            Review,
+            id=self.kwargs.get('review_id')
         )
 
+    def get_queryset(self):
+        return Comments.objects.filter(review=self.get_review())
+
     def perform_create(self, serializer):
-        review = get_object_or_404(
-            Review,
-            id=self.kwargs.get('review_id'))
-        serializer.save(author=self.request.user, review=review)
+        serializer.save(author=self.request.user,
+                        review=self.get_review())
 
 
 class CategoryViewSet(CategoryGenre):
@@ -94,7 +93,9 @@ class GenreViewSet(CategoryGenre):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.annotate(rating=Avg('reviews__score')).all()
+    queryset = Title.objects.annotate(
+        rating=Avg('reviews__score')
+    ).order_by('name').all()
     permission_classes = (IsAdminOrReadOnly,)
     pagination_class = PageNumberPagination
     http_method_names = ('get', 'post', 'patch', 'delete',)

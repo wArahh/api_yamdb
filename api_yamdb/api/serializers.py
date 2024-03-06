@@ -37,15 +37,13 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         request = self.context['request']
-        if request.method == 'POST':
-            title_id = self.context['view'].kwargs.get('title_id')
-            user = request.user
-            review = (Review.objects.filter(
-                title=title_id,
-                author=user
-            ).exists())
-            if review:
-                raise ValidationError(REPEAT_REVIEW)
+        if request.method != 'POST':
+            return data
+        if Review.objects.filter(
+                title=self.context['view'].kwargs.get('title_id'),
+                author=request.user
+        ).exists():
+            raise ValidationError(REPEAT_REVIEW)
         return data
 
 
