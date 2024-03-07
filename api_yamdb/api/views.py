@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.serializers import ValidationError
 from rest_framework_simplejwt.tokens import AccessToken
 
-from reviews.models import Category, Comments, Genre, Review, Title, User
+from reviews.models import Category, Genre, Review, Title, User
 from .filters import GenreCategoryFilter
 from .permissions import (
     AdminOnly,
@@ -90,7 +90,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         )
 
     def get_queryset(self):
-        return Comments.objects.filter(review=self.get_review())
+        return self.get_review().comment_reviews.all()
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user,
@@ -110,7 +110,7 @@ class GenreViewSet(CategoryGenre):
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(
         rating=Avg('reviews__score')
-    ).order_by('name').all()
+    )
     permission_classes = (IsAdminOrReadOnly,)
     pagination_class = PageNumberPagination
     http_method_names = ('get', 'post', 'patch', 'delete',)

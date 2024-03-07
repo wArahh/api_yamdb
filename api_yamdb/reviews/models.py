@@ -1,4 +1,4 @@
-from django.utils import timezone
+from datetime import datetime
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.conf import settings
@@ -100,6 +100,11 @@ class AuthoredText(models.Model):
         verbose_name='Дата публикации',
         auto_now_add=True,
     )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name='Автор',
+    )
 
     class Meta:
         abstract = True
@@ -118,8 +123,10 @@ class Genre(NamedSlug):
         verbose_name_plural = 'Жанры'
 
 
-def current_year():
-    return timezone.now().year
+class DynamicMaxValueValidator(MaxValueValidator):
+    def __call__(self, year):
+        self.limit_value = datetime.now().year
+        super().__call__(year)
 
 
 class Title(models.Model):
@@ -129,7 +136,7 @@ class Title(models.Model):
     )
     year = models.IntegerField(
         verbose_name='Год',
-        validators=(MaxValueValidator(current_year()),)
+        validators=(DynamicMaxValueValidator(datetime.now().year),)
     )
     description = models.TextField(
         verbose_name='Описание',
@@ -169,11 +176,6 @@ class Review(AuthoredText):
         validators=[MinValueValidator(settings.MIN_SCORE),
                     MaxValueValidator(settings.MAX_SCORE)],
     )
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Автор',
-    )
 
     class Meta(AuthoredText.Meta):
         verbose_name = 'Отзыв'
@@ -193,11 +195,7 @@ class Comments(AuthoredText):
         Review,
         on_delete=models.CASCADE,
         verbose_name='Отзыв',
-    )
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        verbose_name='Автор',
+        related_name='comment_reviews'
     )
 
     class Meta(AuthoredText.Meta):
