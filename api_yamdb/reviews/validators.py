@@ -16,6 +16,7 @@ def username_validator(username):
         for character in username
         if not re.match(settings.USERNAME_PATTERN, character)
     }
+
     if bad_characters:
         raise ValidationError(
             BAD_USERNAME.format(
@@ -23,6 +24,7 @@ def username_validator(username):
                 characters=''.join(bad_characters)
             )
         )
+
     if username in settings.BAD_USERNAME_WORDS:
         raise ValidationError(INCORRECT_USERNAME.format(name=username))
 
