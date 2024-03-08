@@ -1,6 +1,8 @@
-from django.db.models import Avg, Q
+from django.core.exceptions import MultipleObjectsReturned
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from django.db import IntegrityError
 from rest_framework import filters, status, viewsets, mixins
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
@@ -35,7 +37,8 @@ INVALID_CONFIRMATION_CODE = (
     'Неверный код подтверждения!'
     'Пройдите процедуру получения кода заново.'
 )
-SIGNUP_ERROR = 'Ошибка: Попробуйте ввести другие данные.'
+UNIQUE_FAILED = 'Пользователь с таким {field_name} существует.'
+SIGNUP_ERROR = 'Ошибка регистрации: {error}'
 
 
 class CategoryGenre(
@@ -134,8 +137,11 @@ def signup(request):
     email = serializer.validated_data['email']
     try:
         user, _ = User.objects.get_or_create(username=username, email=email)
-    except Exception:
-        raise ValidationError(SIGNUP_ERROR)
+    except (IntegrityError, MultipleObjectsReturned) as error:
+        if 'UNIQUE' in str(error):
+            field_name = str(error).split()[-1].split('.')[-1]
+            raise ValidationError(UNIQUE_FAILED.format(field_name=field_name))
+        raise ValidationError(SIGNUP_ERROR.format(error=str(error)))
     confirmation_code = get_confirmation_code()
     user.confirmation_code = confirmation_code
     user.save()
