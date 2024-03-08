@@ -17,7 +17,6 @@ def username_validator(username):
     if bad_characters:
         raise ValidationError(
             BAD_USERNAME.format(
-                name=username,
                 characters=''.join(set(bad_characters))
             )
         )
