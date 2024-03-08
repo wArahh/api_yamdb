@@ -129,3 +129,4 @@ YAMDB_EMAIL = 'yamdb@example.com'
 
 BAD_USERNAME_WORDS = ('me',)
 USERNAME_PATTERN = r'^[\w.@+-]+\Z'
+USERNAME_BAD_CHARACTERS_PATTERN = r'[^\w.@+-]'
