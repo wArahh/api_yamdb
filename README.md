@@ -62,7 +62,7 @@
   
 После регистрации и получения токена пользователь может отправить PATCH-запрос на эндпоинт `/api/v1/users/me/` и заполнить поля в своём профайле (описание полей — в документации).  
   
-## Как запустить проект:  
+## Как запустить проект: 
   
 Клонировать репозиторий и перейти в него в командной строке:  
   
@@ -108,7 +108,7 @@ python3 manage.py runserver
   
 ## Management command: populatingdb - наполнить базу данных
 
-После того как вы выполните все шаги из «[[#Как запустить проект|как запустить проект]]» - запустите команду:
+После того как вы выполните все шаги из «**Как запустить проект**» - запустите команду:
 
 ```
 python3 manage.py populatingdb
@@ -143,10 +143,31 @@ http://127.0.0.1:8000/api/v1/titles/
   
 Вывод будет таким:  
   
-```json  
-{  
-  "count": 0,  "next": "string",  "previous": "string",  "results": [    {      "id": 0,      "name": "string",      "year": 0,      "rating": 0,      "description": "string",      "genre": [        {          "name": "string",          "slug": "string"        }      ],      "category": {        "name": "string",        "slug": "string"      }    }  ]}  
-  
+```json
+{
+  "count": 0,
+  "next": "string",
+  "previous": "string",
+  "results": [
+    {
+      "id": 0,
+      "name": "string",
+      "year": 0,
+      "rating": 0,
+      "description": "string",
+      "genre": [
+        {
+          "name": "string",
+          "slug": "string"
+        }
+      ],
+      "category": {
+        "name": "string",
+        "slug": "string"
+      }
+    }
+  ]
+}
 ```  
   
 ## Технологии  

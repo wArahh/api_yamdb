@@ -6,24 +6,20 @@ from django.core.exceptions import ValidationError
 
 INCORRECT_USERNAME = 'Имя {name} - недопустимо.'
 BAD_USERNAME = (
-    'Неверный формат имени {name}. '
+    'Неверный формат имени. '
     'Запрещенные символы: {characters}'
 )
 INVALID_YEAR = 'Год не может быть выше текущего'
 
 
 def username_validator(username):
-    bad_characters = {
-        character
-        for character in username
-        if not re.match(settings.USERNAME_PATTERN, character)
-    }
-
+    bad_characters = re.findall(
+        settings.USERNAME_BAD_CHARACTERS_PATTERN, username
+    )
     if bad_characters:
         raise ValidationError(
             BAD_USERNAME.format(
-                name=username,
-                characters=''.join(bad_characters)
+                characters=''.join(set(bad_characters))
             )
         )
 
