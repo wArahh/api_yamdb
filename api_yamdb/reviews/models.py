@@ -15,11 +15,6 @@ CHOICES = (
     (MODERATOR, 'модератор'),
     (ADMIN, 'администратор'),
 )
-CHOICES_MAX_LENGTH = max(
-    len(choice)
-    for value in CHOICES
-    for choice in value
-)
 
 
 class User(AbstractUser):
@@ -47,7 +42,10 @@ class User(AbstractUser):
     role = models.CharField(
         verbose_name='Роль',
         choices=CHOICES,
-        max_length=CHOICES_MAX_LENGTH,
+        max_length=max(
+            len(choice)
+            for choice, _ in CHOICES
+        ),
         default=USER
 
     )
@@ -58,7 +56,7 @@ class User(AbstractUser):
 
     @property
     def is_admin(self):
-        return self.role == ADMIN or (self.is_superuser or self.is_staff)
+        return self.role == ADMIN or self.is_staff
 
     @property
     def is_moderator(self):

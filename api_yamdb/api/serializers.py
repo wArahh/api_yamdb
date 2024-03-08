@@ -160,7 +160,5 @@ class UsersSerializer(serializers.ModelSerializer):
 
 
 class UsersForUserSerializer(UsersSerializer):
-    class Meta:
-        model = User
-        fields = UsersSerializer.Meta.fields
+    class Meta(UsersSerializer.Meta):
         read_only_fields = ('role',)
