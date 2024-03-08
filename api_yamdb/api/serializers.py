@@ -9,7 +9,10 @@ from reviews.validators import username_validator
 
 INCORRECT_YEAR = ('Нельзя добавлять произведение,'
                   ' которое ещё не вышло!')
-SCORE_VALIDATE = 'Оценка не может быть ниже нуля и выше 10'
+SCORE_VALIDATE = (f'Оценка не может быть ниже '
+                  f'{settings.MIN_SCORE} '
+                  f'и выше '
+                  f'{settings.MAX_SCORE}')
 REPEAT_REVIEW = 'Нельзя создать два ревью на одно произведение'
 STATUS_MYSELF = 'Вы не можете присвоить себе статус'
 
@@ -34,16 +37,16 @@ class ReviewSerializer(serializers.ModelSerializer):
         )
         model = Review
 
-    def validate(self, data):
+    def validate(self, review):
         request = self.context['request']
         if request.method != 'POST':
-            return data
+            return review
         if Review.objects.filter(
-                title=self.context['view'].kwargs.get('title_id'),
-                author=request.user
+            title=self.context['view'].kwargs.get('title_id'),
+            author=request.user
         ).exists():
             raise ValidationError(REPEAT_REVIEW)
-        return data
+        return review
 
 
 class CommentSerializer(serializers.ModelSerializer):
@@ -157,7 +160,5 @@ class UsersSerializer(serializers.ModelSerializer):
 
 
 class UsersForUserSerializer(UsersSerializer):
-    class Meta:
-        model = User
-        fields = UsersSerializer.Meta.fields
+    class Meta(UsersSerializer.Meta):
         read_only_fields = ('role',)
