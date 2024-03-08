@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.exceptions import MultipleObjectsReturned
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
@@ -156,15 +157,16 @@ def token(request):
     serializer.is_valid(raise_exception=True)
     data = serializer.validated_data
     user = get_object_or_404(User, username=data['username'])
-    if user.confirmation_code != data['confirmation_code']:
-        user.confirmation_code = get_confirmation_code()
+    if (
+        data['confirmation_code'] == settings.DEFAULT_CONFIRMATION_CODE
+        or data['confirmation_code'] != user.confirmation_code
+    ):
+        user.confirmation_code = settings.DEFAULT_CONFIRMATION_CODE
         user.save()
         raise ValidationError(
             INVALID_CONFIRMATION_CODE
         )
     access_token = AccessToken.for_user(user)
-    user.confirmation_code = get_confirmation_code()
-    user.save()
     return Response(
         {'token': str(access_token)},
         status=status.HTTP_200_OK
@@ -188,7 +190,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,)
     )
     def get_current_user_info(self, request):
-        if request.method != 'PATCH':
+        if request.method == 'GET':
             return Response(UsersForUserSerializer(request.user).data)
         serializer = UsersForUserSerializer(
             request.user,
