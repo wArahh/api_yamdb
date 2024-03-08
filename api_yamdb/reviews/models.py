@@ -1,10 +1,9 @@
-from datetime import datetime
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 
-from .validators import username_validator
+from .validators import username_validator, validate_year
 
 USER = 'user'
 ADMIN = 'admin'
@@ -107,6 +106,7 @@ class AuthoredText(models.Model):
     class Meta:
         abstract = True
         ordering = ('pub_date',)
+        default_related_name = 'authored_texts'
 
 
 class Category(NamedSlug):
@@ -121,12 +121,6 @@ class Genre(NamedSlug):
         verbose_name_plural = 'Жанры'
 
 
-class DynamicMaxValueValidator(MaxValueValidator):
-    def __call__(self, year):
-        self.limit_value = datetime.now().year
-        super().__call__(year)
-
-
 class Title(models.Model):
     name = models.CharField(
         verbose_name='Название',
@@ -134,7 +128,7 @@ class Title(models.Model):
     )
     year = models.IntegerField(
         verbose_name='Год',
-        validators=(DynamicMaxValueValidator(datetime.now().year),)
+        validators=(validate_year,)
     )
     description = models.TextField(
         verbose_name='Описание',

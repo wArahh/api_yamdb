@@ -1,5 +1,6 @@
 import re
 
+from django.utils import timezone
 from django.conf import settings
 from django.core.exceptions import ValidationError
 
@@ -8,6 +9,7 @@ BAD_USERNAME = (
     'Неверный формат имени {name}. '
     'Запрещенные символы: {characters}'
 )
+INVALID_YEAR = 'Год не может быть выше текущего'
 
 
 def username_validator(username):
@@ -29,3 +31,8 @@ def username_validator(username):
         raise ValidationError(INCORRECT_USERNAME.format(name=username))
 
     return username
+
+
+def validate_year(year):
+    if year > timezone.now().year:
+        raise ValidationError(INVALID_YEAR)
