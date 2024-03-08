@@ -45,12 +45,12 @@ router_v1.register(
     GenreViewSet,
     basename='genres'
 )
-auth_urls_v1 = ([
+auth_urls = ([
     path('signup/', signup, name='signup'),
     path('token/', token, name='token'),
 ], 'auth')
 
 urlpatterns = [
-    path('v1/auth/', include(auth_urls_v1)),
+    path('v1/auth/', include(auth_urls)),
     path('v1/', include(router_v1.urls)),
 ]

@@ -133,10 +133,7 @@ def signup(request):
     username = serializer.validated_data['username']
     email = serializer.validated_data['email']
     try:
-        user, _ = User.objects.filter(
-            ~Q(Q(username=username) & ~Q(email=email))
-            | ~Q(Q(email=email) & ~Q(username=username))
-        ).get_or_create(username=username, email=email)
+        user, _ = User.objects.get_or_create(username=username, email=email)
     except Exception:
         raise ValidationError(SIGNUP_ERROR)
     confirmation_code = get_confirmation_code()
