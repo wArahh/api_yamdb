@@ -106,7 +106,6 @@ class AuthoredText(models.Model):
     class Meta:
         abstract = True
         ordering = ('pub_date',)
-        default_related_name = 'authored_texts'
 
 
 class Category(NamedSlug):
@@ -182,12 +181,11 @@ class Review(AuthoredText):
         return self.title
 
 
-class Comments(AuthoredText):
+class Comment(AuthoredText):
     review = models.ForeignKey(
         Review,
         on_delete=models.CASCADE,
         verbose_name='Отзыв',
-        related_name='comment_reviews'
     )
 
     class Meta(AuthoredText.Meta):

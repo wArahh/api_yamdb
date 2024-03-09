@@ -9,7 +9,7 @@ BAD_USERNAME = (
     'Неверный формат имени {name}. '
     'Запрещенные символы: {characters}'
 )
-INVALID_YEAR = 'Год не может быть выше текущего'
+INVALID_YEAR = '''Год не может быть выше текущего', {current} > {correct}'''
 
 
 def username_validator(username):
@@ -35,4 +35,7 @@ def username_validator(username):
 
 def validate_year(year):
     if year > timezone.now().year:
-        raise ValidationError(INVALID_YEAR)
+        raise ValidationError(INVALID_YEAR.format(
+            current=year, correct=timezone.now().year
+        ))
+    return year

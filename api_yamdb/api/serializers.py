@@ -3,7 +3,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from rest_framework import serializers
 from django.conf import settings
 
-from reviews.models import Category, Comments, Genre, Review, Title, User
+from reviews.models import Category, Comment, Genre, Review, Title, User
 from reviews.validators import username_validator
 
 
@@ -56,7 +56,7 @@ class CommentSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = Comments
+        model = Comment
         fields = (
             'id',
             'text',
