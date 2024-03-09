@@ -106,15 +106,15 @@ python3 manage.py migrate
 python3 manage.py runserver  
 ```  
   
-## Management command: populatingdb - наполнить базу данных
+## Management command: `importfrom_csv` - наполнить базу данных
 
 После того как вы выполните все шаги из «**Как запустить проект**» - запустите команду:
 
 ```
-python3 manage.py populatingdb
+python3 manage.py importfrom_csv
 ```
 
-команда `populatingdb` наполнит БД всеми необходимыми данными для дальнейшей работы с проектом.
+команда `importfrom_csv` наполнит БД всеми необходимыми данными для дальнейшей работы с проектом.
 
 Во время успешного выполнения команды в терминале должен быть вот такой текст:
 

@@ -13,8 +13,8 @@ INVALID_YEAR = '''Год не может быть выше текущего', {c
 
 
 def username_validator(username):
-    bad_characters = re.findall(
-        settings.USERNAME_BAD_CHARACTERS_PATTERN, username
+    bad_characters = re.sub(
+        settings.USERNAME_PATTERN, '', username
     )
     if bad_characters:
         raise ValidationError(
