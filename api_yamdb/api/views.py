@@ -1,5 +1,4 @@
 from django.conf import settings
-from django.core.exceptions import MultipleObjectsReturned
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -138,11 +137,18 @@ def signup(request):
     email = serializer.validated_data['email']
     try:
         user, _ = User.objects.get_or_create(username=username, email=email)
-    except (IntegrityError, MultipleObjectsReturned) as error:
-        if 'UNIQUE' in str(error):
-            field_name = str(error).split()[-1].split('.')[-1]
-            raise ValidationError(UNIQUE_FAILED.format(field_name=field_name))
-        raise ValidationError(SIGNUP_ERROR.format(error=str(error)))
+    except IntegrityError:
+        field_name = ''
+        if (
+            User.objects
+                .filter(email=email)
+                .exclude(username=username)
+                .exists()
+        ):
+            field_name += 'email'
+        else:
+            field_name += 'username'
+        raise ValidationError(UNIQUE_FAILED.format(field_name=field_name))
     confirmation_code = get_confirmation_code()
     user.confirmation_code = confirmation_code
     user.save()
