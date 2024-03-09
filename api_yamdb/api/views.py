@@ -1,6 +1,9 @@
-from django.db.models import Avg, Q
+from django.conf import settings
+from django.core.exceptions import MultipleObjectsReturned
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from django.db import IntegrityError
 from rest_framework import filters, status, viewsets, mixins
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
@@ -35,7 +38,8 @@ INVALID_CONFIRMATION_CODE = (
     'Неверный код подтверждения!'
     'Пройдите процедуру получения кода заново.'
 )
-SIGNUP_ERROR = 'Ошибка: Попробуйте ввести другие данные.'
+UNIQUE_FAILED = 'Пользователь с таким {field_name} существует.'
+SIGNUP_ERROR = 'Ошибка регистрации: {error}'
 
 
 class CategoryGenre(
@@ -108,7 +112,7 @@ class GenreViewSet(CategoryGenre):
 class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(
         rating=Avg('reviews__score')
-    )
+    ).order_by('name')
     permission_classes = (IsAdminOrReadOnly,)
     pagination_class = PageNumberPagination
     http_method_names = ('get', 'post', 'patch', 'delete',)
@@ -133,12 +137,12 @@ def signup(request):
     username = serializer.validated_data['username']
     email = serializer.validated_data['email']
     try:
-        user, _ = User.objects.filter(
-            ~Q(Q(username=username) & ~Q(email=email))
-            | ~Q(Q(email=email) & ~Q(username=username))
-        ).get_or_create(username=username, email=email)
-    except Exception:
-        raise ValidationError(SIGNUP_ERROR)
+        user, _ = User.objects.get_or_create(username=username, email=email)
+    except (IntegrityError, MultipleObjectsReturned) as error:
+        if 'UNIQUE' in str(error):
+            field_name = str(error).split()[-1].split('.')[-1]
+            raise ValidationError(UNIQUE_FAILED.format(field_name=field_name))
+        raise ValidationError(SIGNUP_ERROR.format(error=str(error)))
     confirmation_code = get_confirmation_code()
     user.confirmation_code = confirmation_code
     user.save()
@@ -153,15 +157,16 @@ def token(request):
     serializer.is_valid(raise_exception=True)
     data = serializer.validated_data
     user = get_object_or_404(User, username=data['username'])
-    if user.confirmation_code != data['confirmation_code']:
-        user.confirmation_code = get_confirmation_code()
+    if (
+        data['confirmation_code'] == settings.DEFAULT_CONFIRMATION_CODE
+        or data['confirmation_code'] != user.confirmation_code
+    ):
+        user.confirmation_code = settings.DEFAULT_CONFIRMATION_CODE
         user.save()
         raise ValidationError(
             INVALID_CONFIRMATION_CODE
         )
     access_token = AccessToken.for_user(user)
-    user.confirmation_code = get_confirmation_code()
-    user.save()
     return Response(
         {'token': str(access_token)},
         status=status.HTTP_200_OK
@@ -185,7 +190,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         permission_classes=(IsAuthenticated,)
     )
     def get_current_user_info(self, request):
-        if request.method != 'PATCH':
+        if request.method == 'GET':
             return Response(UsersForUserSerializer(request.user).data)
         serializer = UsersForUserSerializer(
             request.user,
