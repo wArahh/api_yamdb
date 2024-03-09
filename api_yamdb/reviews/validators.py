@@ -25,7 +25,6 @@ def username_validator(username):
 
     if username in settings.BAD_USERNAME_WORDS:
         raise ValidationError(INCORRECT_USERNAME.format(name=username))
-
     return username
 
 
