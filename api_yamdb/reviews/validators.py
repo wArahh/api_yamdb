@@ -9,12 +9,12 @@ BAD_USERNAME = (
     'Неверный формат имени. '
     'Запрещенные символы: {characters}'
 )
-INVALID_YEAR = 'Год не может быть выше текущего'
+INVALID_YEAR = '''Год не может быть выше текущего', {current} > {correct}'''
 
 
 def username_validator(username):
-    bad_characters = re.findall(
-        settings.USERNAME_BAD_CHARACTERS_PATTERN, username
+    bad_characters = re.sub(
+        settings.USERNAME_PATTERN, '', username
     )
     if bad_characters:
         raise ValidationError(
@@ -25,10 +25,12 @@ def username_validator(username):
 
     if username in settings.BAD_USERNAME_WORDS:
         raise ValidationError(INCORRECT_USERNAME.format(name=username))
-
     return username
 
 
 def validate_year(year):
     if year > timezone.now().year:
-        raise ValidationError(INVALID_YEAR)
+        raise ValidationError(INVALID_YEAR.format(
+            current=year, correct=timezone.now().year
+        ))
+    return year

@@ -28,7 +28,7 @@ def universal_bulk_create(datas, model):
     )
 
 
-def bulk_create_titles(datas, model):
+def create_titles(datas, model):
     for data in datas:
         data = dict(data)
         cat_id = data.pop('category')
@@ -37,7 +37,7 @@ def bulk_create_titles(datas, model):
         model.objects.create(**data)
 
 
-def bulk_create_reviews_comments(datas, model):
+def create_reviews_comments(datas, model):
     for data in datas:
         data = dict(data)
         author_id = data.pop('author')
